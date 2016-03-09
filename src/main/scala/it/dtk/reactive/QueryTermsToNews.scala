@@ -6,19 +6,16 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.{RequestBuilder, ScrollPublisher}
-import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
+import com.sksamuel.elastic4s.streams.ScrollPublisher
+import com.softwaremill.react.kafka.ReactiveKafka
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
 import it.dtk.reactive.helpers._
-import org.apache.kafka.common.serialization.StringSerializer
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
-import org.json4s.jackson.Serialization._
-import org.reactivestreams.Subscriber
 
 import scala.language.implicitConversions
 
