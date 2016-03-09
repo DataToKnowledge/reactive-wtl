@@ -1,11 +1,9 @@
-package it.dtk.akkastream
+package it.dtk.akkastream.test
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.FanInShape.{Init, Name}
 import akka.stream._
-import FanInShape.Name
-import akka.stream._
-import FanInShape.Init
 import akka.stream.scaladsl._
 
 import scala.collection.immutable

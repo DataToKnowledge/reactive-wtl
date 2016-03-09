@@ -1,14 +1,12 @@
-package it.dtk.akkastream
+package it.dtk.akkastream.test
 
 import akka.actor.ActorSystem
-import akka.stream.{OverflowStrategy, ActorMaterializer}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, OverflowStrategy}
 import com.softwaremill.react.kafka.KafkaMessages._
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer, StringDeserializer, IntegerSerializer}
-import com.softwaremill.react.kafka.{ProducerMessage, ConsumerProperties, ProducerProperties, ReactiveKafka}
+import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
+import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer, StringSerializer}
 import org.reactivestreams.{Publisher, Subscriber}
-
-import scala.util.{Failure, Success}
 
 /**
   * Created by fabiofumarola on 07/03/16.
