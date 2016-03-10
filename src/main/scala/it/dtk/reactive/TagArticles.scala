@@ -6,6 +6,7 @@ import akka.stream.{OverflowStrategy, ActorMaterializer}
 import akka.stream.scaladsl._
 import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import it.dtk.nlp.DBpediaSpotLight
+import it.dtk.reactive.util.FilterDuplicates
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -22,7 +23,7 @@ import scala.language.implicitConversions
   * Created by fabiofumarola on 09/03/16.
   */
 object TagArticles {
-  implicit val actorSystem = ActorSystem("QueryTermsToNews")
+  implicit val actorSystem = ActorSystem("TagArticles")
   implicit val materializer = ActorMaterializer()
   implicit val executor = actorSystem.dispatcher
   val kafka = new ReactiveKafka()
@@ -57,7 +58,13 @@ object TagArticles {
         a.copy(annotations = enrichment)
       }
 
-
+//    val taggedArticles2 = source
+//      .via(new FilterDuplicates[Article](50))
+//      .map(a => annotateArticle)
+//      .map { a =>
+//        val enrichment = a.annotations.map(ann => dbpedia.enrichAnnotation(ann))
+//        a.copy(annotations = enrichment)
+//      }
 
     actorSystem.registerOnTermination({
       dbpedia.close()
