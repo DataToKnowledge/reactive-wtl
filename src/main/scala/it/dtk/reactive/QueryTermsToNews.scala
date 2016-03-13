@@ -3,7 +3,7 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
@@ -49,7 +49,7 @@ object QueryTermsToNews {
     val client = new ElasticQueryTerms(esHosts, esIndexPath, clusterName).client
 
     val toCheckQueries = queryTermSource(client, esIndexPath)
-    val articles = extractArticles(toCheckQueries, hostname)
+    val articles = toCheckQueries.via(extractArticles(hostname))
 
     saveArticlesToKafka(articles, kafka, kafkaBrokers, topic)
 
@@ -87,16 +87,9 @@ object QueryTermsToNews {
     toCheckQueries
   }
 
-  def extractArticles(toCheckQueries: Source[QueryTerm, NotUsed], hostname: String): Source[Article, NotUsed] = {
-    val urls = toCheckQueries
-      .flatMapConcat(q => terms.generateUrls(q.terms, q.lang, hostname))
-      .flatMapConcat(u => terms.getResultsAsArticles(u))
-
-    urls.sliding(3)
-      .take(2)
-      .runWith(Sink.foreach(println))
-
-    urls.map(a => gander.mainContent(a))
-  }
+  def extractArticles(hostname: String) = Flow[QueryTerm]
+    .flatMapConcat(q => terms.generateUrls(q.terms, q.lang, hostname))
+    .flatMapConcat(u => terms.getResultsAsArticles(u))
+    .map(gander.mainContent)
 
 }

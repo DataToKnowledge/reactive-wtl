@@ -20,7 +20,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "com.softwaremill.reactivekafka" %% "reactive-kafka-core" % "0.10.0",
 //      "org.slf4j" % "slf4j-nop" % "1.7.18",
-      "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.0"
+      "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.0",
+      "com.typesafe.akka" %% "akka-http-core" % "2.4.2"
     )
   ) dependsOn algocore
 lazy val algocore = (project in file("./algocore"))

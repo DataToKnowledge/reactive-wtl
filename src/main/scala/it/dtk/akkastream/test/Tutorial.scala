@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.stream.FanInShape.{Init, Name}
 import akka.stream._
 import akka.stream.scaladsl._
+import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -237,5 +238,30 @@ object WorkerPoolExample extends App {
     priorityPool2.result ~> Sink.foreach(println)
     ClosedShape
   }).run()
+
+}
+
+
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import scala.util._
+
+object ExampleHttpClient extends App {
+  implicit val actorSystem = ActorSystem("Tutorial")
+  implicit val materializer = ActorMaterializer()
+  implicit val executor = actorSystem.dispatcher
+
+  val response = Http().singleRequest(HttpRequest(uri = "http://www.google.it"))
+
+  response.onComplete{
+    case Success(response) =>
+      println(response.headers)
+      val body = response.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
+      val b = Await.result(body, 5 seconds)
+      println(b.utf8String)
+
+    case Failure(ex) =>
+      ex.printStackTrace()
+  }
 
 }

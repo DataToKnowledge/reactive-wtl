@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 import akka.stream.{OverflowStrategy, ActorMaterializer}
 import akka.stream.scaladsl._
 import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
-import it.dtk.nlp.DBpediaSpotLight
+import it.dtk.nlp.{FocusLocation, DBpediaSpotLight}
 import it.dtk.reactive.util.FilterDuplicates
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.json4s.NoTypeHints
@@ -16,6 +16,7 @@ import helpers._
 import org.json4s.jackson.JsonMethods._
 import org.json4s._
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 import scala.language.implicitConversions
 
@@ -33,38 +34,47 @@ object TagArticles {
     val esHosts = "192.168.99.100:9300"
     val locDocPath = "wtl/locations"
     val clusterName = "wheretolive"
+    val locationsIndexPath = "wtl/locations"
 
     val hostname = "wheretolive.it"
     val batchSize = 10
 
     //Kafka Params
     val kafkaBrokers = "192.168.99.100:9092"
-    val topic = "feed_items"
+    val readTopic = "feed_items"
+    val writeTopic = "articles"
     val grouId = "articlesTagger"
 
     val dbPediaBaseUrl = "http://192.168.99.100:2230"
     val lang = "it"
-    val dbpedia = new DBpediaSpotLight(dbPediaBaseUrl, lang)
+    implicit val dbpedia = new DBpediaSpotLight(dbPediaBaseUrl, lang)
+    val locExtractor = new FocusLocation(esHosts, locationsIndexPath, clusterName)
 
+    val source = feedItemsSource(kafkaBrokers, readTopic, grouId)
 
-    val source = feedItemsSource(kafkaBrokers, topic, grouId)
+    //    val taggedArticles2 = source
+    //      .via(new FilterDuplicates[Article](50))
+    //      .map(a => annotateArticle)
+    //      .map { a =>
+    //        val enrichment = a.annotations.map(ann => dbpedia.enrichAnnotation(ann))
+    //        a.copy(annotations = enrichment)
+    //      }
 
     val taggedArticles = source
       .groupedWithin(50, 20 seconds)
-      .map(_.toSet)
-      .map(a => annotateArticle)
+      .flatMapConcat(s => Source(s.toSet))
+      .map(annotateArticle)
       .map { a =>
         val enrichment = a.annotations.map(ann => dbpedia.enrichAnnotation(ann))
         a.copy(annotations = enrichment)
       }
 
-//    val taggedArticles2 = source
-//      .via(new FilterDuplicates[Article](50))
-//      .map(a => annotateArticle)
-//      .map { a =>
-//        val enrichment = a.annotations.map(ann => dbpedia.enrichAnnotation(ann))
-//        a.copy(annotations = enrichment)
-//      }
+    val focusLocationArticles = taggedArticles.map { a =>
+      val location = locExtractor.findMainLocation(a)
+      a.copy(focusLocation = location)
+    }
+
+    saveArticlesToKafka(focusLocationArticles, kafka, kafkaBrokers, writeTopic)
 
     actorSystem.registerOnTermination({
       dbpedia.close()
@@ -84,7 +94,7 @@ object TagArticles {
   }
 
 
-  def annotateArticle(implicit dbpedia: DBpediaSpotLight, a: Article): Article = {
+  def annotateArticle(a: Article)(implicit dbpedia: DBpediaSpotLight): Article = {
 
     val titleAn = if (a.title.nonEmpty)
       dbpedia.annotateText(a.title, DocumentSection.Title)
