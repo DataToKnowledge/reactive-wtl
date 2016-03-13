@@ -2,8 +2,8 @@ package it.dtk.reactive
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{ActorMaterializerSettings, Supervision, ActorMaterializer}
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
@@ -19,14 +19,21 @@ import org.json4s.jackson.Serialization
 
 import scala.language.implicitConversions
 
-
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
+ * Created by fabiofumarola on 08/03/16.
+ */
 object QueryTermsToNews {
 
+  val decider: Supervision.Decider = {
+    case ex =>
+      //TODO add methods to log all this errors
+      Supervision.Resume
+  }
+
   implicit val actorSystem = ActorSystem("QueryTermsToNews")
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer(
+    ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
+  )
   implicit val executor = actorSystem.dispatcher
   val kafka = new ReactiveKafka()
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
@@ -45,7 +52,6 @@ object QueryTermsToNews {
     val kafkaBrokers = "192.168.99.100:9092"
     val topic = "feed_items"
 
-
     val client = new ElasticQueryTerms(esHosts, esIndexPath, clusterName).client
 
     val toCheckQueries = queryTermSource(client, esIndexPath)
@@ -62,8 +68,7 @@ object QueryTermsToNews {
         case (newsPublisher, url) =>
           val rss = html.findRss(url)
           Source(rss.filterNot(_.contains("comment")).map(url =>
-            Feed(url, newsPublisher, List.empty, Some(DateTime.now()))
-          ))
+            Feed(url, newsPublisher, List.empty, Some(DateTime.now()))))
       }
 
     saveToElastic(feeds, client, feedsIndexPath, batchSize, 2)

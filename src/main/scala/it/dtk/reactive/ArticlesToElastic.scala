@@ -2,11 +2,11 @@ package it.dtk.reactive
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializerSettings, Supervision, ActorMaterializer}
+import akka.stream.scaladsl.{ Sink, Source }
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
-import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
+import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
+import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -18,11 +18,22 @@ import org.json4s.jackson.Serialization._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 
 /**
-  * Created by fabiofumarola on 10/03/16.
-  */
+ * Created by fabiofumarola on 10/03/16.
+ */
 object ArticlesToElastic {
+
   implicit val actorSystem = ActorSystem("FeedToNews")
-  implicit val materializer = ActorMaterializer()
+
+  val decider: Supervision.Decider = {
+    case ex =>
+      //TODO add methods to log all this errors
+      Supervision.Resume
+  }
+
+  implicit val materializer = ActorMaterializer(
+    ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
+  )
+
   implicit val executor = actorSystem.dispatcher
   val kafka = new ReactiveKafka()
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
@@ -60,7 +71,7 @@ object ArticlesToElastic {
   }
 
   def saveToElastic(articles: Source[Article, NotUsed], client: ElasticClient,
-                    indexPath: String, batchSize: Int, concurrentReqs: Int): Unit = {
+    indexPath: String, batchSize: Int, concurrentReqs: Int): Unit = {
 
     implicit val builder = new RequestBuilder[Article] {
 
@@ -73,7 +84,8 @@ object ArticlesToElastic {
     val elasticSink = client.subscriber[Article](
       batchSize = batchSize,
       concurrentRequests = concurrentReqs,
-      completionFn = () => println("all done"))
+      completionFn = () => println("all done")
+    )
 
     articles.runWith(Sink.fromSubscriber(elasticSink))
   }

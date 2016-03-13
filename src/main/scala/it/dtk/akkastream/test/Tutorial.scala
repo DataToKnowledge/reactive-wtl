@@ -10,6 +10,21 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util._
+import scala.concurrent.duration._
+
+
+object Tutorial0 extends App {
+
+  implicit val actorSystem = ActorSystem("Tutorial")
+  implicit val materializer = ActorMaterializer()
+  implicit val executor = actorSystem.dispatcher
+
+  val f = Source(1 to 100)
+    .map(List(_))
+    .to(Sink.foreach(println)).run()
+
+
+}
 
 /**
   * Created by fabiofumarola on 08/03/16.
@@ -20,8 +35,14 @@ object Tutorial extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executor = actorSystem.dispatcher
 
+
   val sink = Sink.fold[Int, Int](0)(_ + _)
   val runnnable = Source(1 to 10).toMat(sink)(Keep.right)
+
+  val f = Source(1 to 100)
+    .map(_ * 2)
+    .to(Sink.foreach(println)).run()
+
 
   val sum1 = runnnable.run()
   val sum2 = runnnable.run()
@@ -43,7 +64,6 @@ object Tutorial extends App {
   Source(1 to 6)
     .map(_ * 2)
     .to(Sink.foreach(println)).run()
-
 
   val myFlow =
     Flow[Int].map(_ * 2)
@@ -68,9 +88,7 @@ object FusionTest extends App {
     .take(1000)
     .to(Sink.foreach(println)).run()
 
-
 }
-
 
 object SimpleGraph extends App {
   implicit val actorSystem = ActorSystem("Tutorial")
@@ -96,7 +114,6 @@ object SimpleGraph extends App {
 
   g.run()
 
-
 }
 
 import scala.concurrent.duration._
@@ -118,19 +135,18 @@ object UnconnectedGraph extends App {
 
   val resultSink = Sink.head[Int]
 
-  val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b =>
-    sink =>
-      import GraphDSL.Implicits._
+  val g = RunnableGraph.fromGraph(GraphDSL.create(resultSink) { implicit b => sink =>
+    import GraphDSL.Implicits._
 
-      val pm3 = b.add(pickMaxOfThree)
+    val pm3 = b.add(pickMaxOfThree)
 
-      Source.single(1) ~> pm3.in(0)
-      Source.single(2) ~> pm3.in(1)
-      Source.single(3) ~> pm3.in(2)
+    Source.single(1) ~> pm3.in(0)
+    Source.single(2) ~> pm3.in(1)
+    Source.single(3) ~> pm3.in(2)
 
-      pm3.out ~> sink.in
+    pm3.out ~> sink.in
 
-      ClosedShape
+    ClosedShape
   })
 
   val max = g.run()
@@ -150,7 +166,6 @@ object SimpleCombination extends App {
   val result = merged
     .reduce(_ + _)
     .runWith(Sink.foreach(println))
-
 
 }
 
@@ -180,19 +195,19 @@ case class PriorityWorkerPoolShape[In, Out](
 }
 
 case class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool"))
-  extends FanInShape[Out](_init){
+  extends FanInShape[Out](_init) {
   override protected def construct(init: Init[Out]): FanInShape[Out] = new PriorityWorkerPoolShape2(init)
 
   val jobsIn = newInlet[In]("jobsIn")
   val priorityIn = newInlet[In]("priorityIn")
-
 
 }
 
 object PriorityWorkerPool {
   def apply[In, Out](
                       worker: Flow[In, Out, Any],
-                      workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
+                      workerCount: Int
+                    ): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
 
     GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
@@ -241,7 +256,6 @@ object WorkerPoolExample extends App {
 
 }
 
-
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import scala.util._
@@ -253,7 +267,7 @@ object ExampleHttpClient extends App {
 
   val response = Http().singleRequest(HttpRequest(uri = "http://www.google.it"))
 
-  response.onComplete{
+  response.onComplete {
     case Success(response) =>
       println(response.headers)
       val body = response.entity.dataBytes.runFold(ByteString(""))(_ ++ _)

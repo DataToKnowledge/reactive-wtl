@@ -3,13 +3,13 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
-import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
+import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
+import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
 import it.dtk._
-import it.dtk.model.{Article, Feed}
+import it.dtk.model.{ Article, Feed }
 import org.apache.kafka.common.serialization.StringSerializer
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -20,8 +20,8 @@ import org.reactivestreams.Subscriber
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
+ * Created by fabiofumarola on 08/03/16.
+ */
 object helpers {
   val web = HttpDownloader
   val feedExtr = RomeFeedHelper
@@ -34,9 +34,7 @@ object helpers {
   implicit def seqToSource[T](seq: Seq[T]): Source[T, NotUsed] =
     Source(seq.toList)
 
-
-  def saveArticlesToKafka(articles: Source[Article, NotUsed], kafka: ReactiveKafka, kafkaBrokers: String, topic: String)
-                         (implicit system: ActorSystem): Unit = {
+  def saveArticlesToKafka(articles: Source[Article, NotUsed], kafka: ReactiveKafka, kafkaBrokers: String, topic: String)(implicit system: ActorSystem): Unit = {
 
     implicit val materializer = ActorMaterializer()
 
@@ -53,7 +51,7 @@ object helpers {
   }
 
   def saveToElastic(feeds: Source[Feed, NotUsed], client: ElasticClient, indexPath: String,
-                    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): Unit = {
+    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): Unit = {
     implicit val builder = new RequestBuilder[Feed] {
 
       import ElasticDsl._
@@ -68,7 +66,8 @@ object helpers {
     val elasticSink = client.subscriber[Feed](
       batchSize = batchSize,
       concurrentRequests = concurrentRequests,
-      completionFn = () => println("all done"))
+      completionFn = () => println("all done")
+    )
 
     feeds.runWith(Sink.fromSubscriber(elasticSink))
   }

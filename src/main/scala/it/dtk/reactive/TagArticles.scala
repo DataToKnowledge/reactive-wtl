@@ -2,30 +2,36 @@ package it.dtk.reactive
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{OverflowStrategy, ActorMaterializer}
 import akka.stream.scaladsl._
+import akka.stream.{ActorMaterializerSettings, ActorMaterializer, Supervision}
 import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
-import it.dtk.nlp.{FocusLocation, DBpediaSpotLight}
-import it.dtk.reactive.util.FilterDuplicates
-import org.apache.kafka.common.serialization.StringDeserializer
-import org.json4s.NoTypeHints
-import org.json4s.ext.JodaTimeSerializers
-import org.json4s.jackson.Serialization
 import it.dtk.model._
-import helpers._
+import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
+import it.dtk.reactive.helpers._
+import org.apache.kafka.common.serialization.StringDeserializer
+import org.json4s.{NoTypeHints, _}
+import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
-import org.json4s._
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import org.json4s.jackson.Serialization
 
-import scala.language.implicitConversions
+import scala.concurrent.duration._
+import scala.language.{implicitConversions, postfixOps}
 
 /**
   * Created by fabiofumarola on 09/03/16.
   */
 object TagArticles {
+
+  val decider: Supervision.Decider = {
+    case ex =>
+      //TODO add methods to log all this errors
+      Supervision.Resume
+  }
+
   implicit val actorSystem = ActorSystem("TagArticles")
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer(
+    ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
+  )
   implicit val executor = actorSystem.dispatcher
   val kafka = new ReactiveKafka()
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
@@ -92,7 +98,6 @@ object TagArticles {
     Source.fromPublisher(publisher)
       .map(rec => parse(rec.value()).extract[Article])
   }
-
 
   def annotateArticle(a: Article)(implicit dbpedia: DBpediaSpotLight): Article = {
 
