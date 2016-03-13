@@ -1,16 +1,16 @@
 package it.dtk.akkastream.test
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import com.softwaremill.react.kafka.KafkaMessages._
-import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer, StringSerializer}
-import org.reactivestreams.{Publisher, Subscriber}
+import com.softwaremill.react.kafka.{ ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka }
+import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringDeserializer, StringSerializer }
+import org.reactivestreams.{ Publisher, Subscriber }
 
 /**
-  * Created by fabiofumarola on 07/03/16.
-  */
+ * Created by fabiofumarola on 07/03/16.
+ */
 object ProducerExample extends App {
 
   implicit val actorSystem = ActorSystem("ReactiveKafka")

@@ -1,14 +1,14 @@
 package it.dtk.reactive.util
 
-import akka.stream.{Outlet, Inlet, Attributes, FlowShape}
-import akka.stream.stage.{InHandler, GraphStageLogic, GraphStage}
+import akka.stream.{ Outlet, Inlet, Attributes, FlowShape }
+import akka.stream.stage.{ InHandler, GraphStageLogic, GraphStage }
 
 import scala.collection.mutable
 
 /**
-  * Created by fabiofumarola on 10/03/16.
-  * this class filter duplicates in a stream using a local memory
-  */
+ * Created by fabiofumarola on 10/03/16.
+ * this class filter duplicates in a stream using a local memory
+ */
 class FilterDuplicates[A](size: Int) extends GraphStage[FlowShape[A, A]] {
 
   val in = Inlet[A]("FilterDuplicates.in")
@@ -22,6 +22,7 @@ class FilterDuplicates[A](size: Int) extends GraphStage[FlowShape[A, A]] {
       val elementsSet = mutable.Set[A]()
 
       setHandler(in, new InHandler {
+
         override def onPush(): Unit = {
           val elem = grab(in)
           val contains = elementsSet.contains(elem)

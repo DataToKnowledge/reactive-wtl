@@ -2,8 +2,8 @@ package it.dtk.reactive
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
+import akka.stream.{ActorMaterializerSettings, ActorMaterializer, Supervision}
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
@@ -24,8 +24,16 @@ import scala.language.implicitConversions
   */
 object FeedToNews {
 
+  val decider: Supervision.Decider = {
+    case ex =>
+      //TODO add methods to log all this errors
+      Supervision.Resume
+  }
+
   implicit val actorSystem = ActorSystem("FeedToNews")
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer(
+    ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
+  )
   implicit val executor = actorSystem.dispatcher
   val kafka = new ReactiveKafka()
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
