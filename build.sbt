@@ -1,4 +1,3 @@
-
 lazy val commons = Seq(
   organization := "it.datatoknowledge",
   name := "reactive-wtl",

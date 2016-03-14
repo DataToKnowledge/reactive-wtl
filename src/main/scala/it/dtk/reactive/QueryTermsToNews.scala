@@ -2,7 +2,7 @@ package it.dtk.reactive
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializerSettings, Supervision, ActorMaterializer}
+import akka.stream.{ ActorMaterializerSettings, Supervision, ActorMaterializer }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
@@ -57,7 +57,7 @@ object QueryTermsToNews {
     val toCheckQueries = queryTermSource(client, esIndexPath)
     val articles = toCheckQueries.via(extractArticles(hostname))
 
-    saveArticlesToKafka(articles, kafka, kafkaBrokers, topic)
+    saveArticlesToKafkaProtobuf(articles, kafka, kafkaBrokers, topic)
 
     val feeds = articles
       .map(a => a.publisher -> html.host(a.uri))
