@@ -3,14 +3,15 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
-import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
+import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
+import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
 import it.dtk._
-import it.dtk.model.{ Article, Feed }
-import org.apache.kafka.common.serialization.StringSerializer
+import it.dtk.model.Feed
+import it.dtk.protobuf._
+import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.Serialization
@@ -20,8 +21,8 @@ import org.reactivestreams.Subscriber
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 08/03/16.
- */
+  * Created by fabiofumarola on 08/03/16.
+  */
 object helpers {
   val web = HttpDownloader
   val feedExtr = RomeFeedHelper
@@ -34,24 +35,24 @@ object helpers {
   implicit def seqToSource[T](seq: Seq[T]): Source[T, NotUsed] =
     Source(seq.toList)
 
-  def saveArticlesToKafka(articles: Source[Article, NotUsed], kafka: ReactiveKafka, kafkaBrokers: String, topic: String)(implicit system: ActorSystem): Unit = {
+  def saveArticlesToKafkaProtobuf(articles: Source[Article, NotUsed], kafka: ReactiveKafka, kafkaBrokers: String, topic: String)(implicit system: ActorSystem): Unit = {
 
     implicit val materializer = ActorMaterializer()
 
-    val kafkaSink: Subscriber[ProducerMessage[Array[Byte], String]] =
+    val kafkaSink: Subscriber[ProducerMessage[Array[Byte], Array[Byte]]] =
       kafka.publish(ProducerProperties(
         bootstrapServers = kafkaBrokers,
         topic = topic,
-        valueSerializer = new StringSerializer
+        valueSerializer = new ByteArraySerializer()
       ))
 
-    articles
-      .map(a => ProducerMessage(a.uri.getBytes, write(a)))
-      .to(Sink.fromSubscriber(kafkaSink)).run()
+    articles.map { a =>
+      ProducerMessage(a.uri.getBytes, a.toByteArray())
+    }.to(Sink.fromSubscriber(kafkaSink)).run()
   }
 
   def saveToElastic(feeds: Source[Feed, NotUsed], client: ElasticClient, indexPath: String,
-    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): Unit = {
+                    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): Unit = {
     implicit val builder = new RequestBuilder[Feed] {
 
       import ElasticDsl._

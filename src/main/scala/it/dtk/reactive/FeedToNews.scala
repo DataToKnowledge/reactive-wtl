@@ -3,13 +3,14 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
-import akka.stream.{ActorMaterializerSettings, ActorMaterializer, Supervision}
+import akka.stream.{ ActorMaterializerSettings, ActorMaterializer, Supervision }
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
 import com.softwaremill.react.kafka.ReactiveKafka
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{Article, Feed, SchedulerData}
+import it.dtk.model.{ Feed, SchedulerData }
+import it.dtk.protobuf._
 import it.dtk.reactive.helpers._
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
@@ -20,8 +21,8 @@ import org.json4s.jackson.Serialization
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
+ * Created by fabiofumarola on 09/03/16.
+ */
 object FeedToNews {
 
   val decider: Supervision.Decider = {
@@ -63,7 +64,7 @@ object FeedToNews {
       .flatMapConcat(_._2)
       .map(gander.mainContent)
 
-    saveArticlesToKafka(articles, kafka, kafkaBrokers, topic)
+    saveArticlesToKafkaProtobuf(articles, kafka, kafkaBrokers, topic)
   }
 
   def feedSource(client: ElasticClient, indexPath: String): Source[Feed, NotUsed] = {

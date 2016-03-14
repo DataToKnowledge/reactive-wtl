@@ -5,14 +5,15 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializerSettings, ActorMaterializer, Supervision}
 import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
-import it.dtk.model._
 import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
 import it.dtk.reactive.helpers._
-import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
 import org.json4s.{NoTypeHints, _}
 import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
+import it.dtk.protobuf._
+import it.dtk.protobuf.Annotation.DocumentSection
 
 import scala.concurrent.duration._
 import scala.language.{implicitConversions, postfixOps}
@@ -58,14 +59,6 @@ object TagArticles {
 
     val source = feedItemsSource(kafkaBrokers, readTopic, grouId)
 
-    //    val taggedArticles2 = source
-    //      .via(new FilterDuplicates[Article](50))
-    //      .map(a => annotateArticle)
-    //      .map { a =>
-    //        val enrichment = a.annotations.map(ann => dbpedia.enrichAnnotation(ann))
-    //        a.copy(annotations = enrichment)
-    //      }
-
     val taggedArticles = source
       .groupedWithin(50, 20 seconds)
       .flatMapConcat(s => Source(s.toSet))
@@ -80,7 +73,7 @@ object TagArticles {
       a.copy(focusLocation = location)
     }
 
-    saveArticlesToKafka(focusLocationArticles, kafka, kafkaBrokers, writeTopic)
+    saveArticlesToKafkaProtobuf(focusLocationArticles, kafka, kafkaBrokers, writeTopic)
 
     actorSystem.registerOnTermination({
       dbpedia.close()
@@ -88,15 +81,16 @@ object TagArticles {
   }
 
   def feedItemsSource(brokers: String, topic: String, groupId: String): Source[Article, NotUsed] = {
+
     val publisher = kafka.consume(ConsumerProperties(
       bootstrapServers = brokers,
       topic = topic,
       groupId = groupId,
-      valueDeserializer = new StringDeserializer()
+      valueDeserializer = new ByteArrayDeserializer()
     ))
 
     Source.fromPublisher(publisher)
-      .map(rec => parse(rec.value()).extract[Article])
+      .map(rec => Article.parseFrom(rec.value()))
   }
 
   def annotateArticle(a: Article)(implicit dbpedia: DBpediaSpotLight): Article = {
