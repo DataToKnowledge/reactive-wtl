@@ -72,4 +72,23 @@ object helpers {
 
     feeds.runWith(Sink.fromSubscriber(elasticSink))
   }
+
+  def selectConfig(args: Array[String]): String = {
+
+    if (args.isEmpty) {
+      println("run: docker_prod|linux_dev|mac_dev")
+      System.exit(1)
+    }
+
+    args(0) match {
+      case "docker_prod" => "docker_prod.conf"
+      case "linux_dev" => "linux_dev.conf"
+      case "mac_dev" => "mac_dev.conf"
+      case x =>
+        println(s"value $x not valid")
+        System.exit(1)
+        x
+    }
+
+  }
 }

@@ -3,17 +3,18 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializerSettings, ActorMaterializer, Supervision}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
+import com.typesafe.config.ConfigFactory
 import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
-import it.dtk.reactive.helpers._
-import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
-import org.json4s.{NoTypeHints, _}
-import org.json4s.ext.JodaTimeSerializers
-import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization
-import it.dtk.protobuf._
 import it.dtk.protobuf.Annotation.DocumentSection
+import it.dtk.protobuf._
+import it.dtk.reactive.helpers._
+import net.ceedubs.ficus.Ficus._
+import org.apache.kafka.common.serialization.ByteArrayDeserializer
+import org.json4s.NoTypeHints
+import org.json4s.ext.JodaTimeSerializers
+import org.json4s.jackson.Serialization
 
 import scala.concurrent.duration._
 import scala.language.{implicitConversions, postfixOps}
@@ -38,26 +39,28 @@ object TagArticles {
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
 
   def main(args: Array[String]) {
-    val esHosts = "192.168.99.100:9300"
-    val locDocPath = "wtl/locations"
-    val clusterName = "wheretolive"
-    val locationsIndexPath = "wtl/locations"
+    val config = ConfigFactory.load(selectConfig(args)).getConfig("reactive_wtl")
 
-    val hostname = "wheretolive.it"
-    val batchSize = 10
+    //Elasticsearch Params
+    val esHosts = config.as[String]("elastic.hosts")
+    val locationsIndexPath = config.as[String]("elastic.docs.locations")
+    val clusterName = config.as[String]("elastic.clusterName")
+    val hostname = config.as[String]("hostname")
+    val batchSize = config.as[Int]("elastic.feeds.batch_size")
 
     //Kafka Params
-    val kafkaBrokers = "192.168.99.100:9092"
-    val readTopic = "feed_items"
-    val writeTopic = "articles"
-    val grouId = "articlesTagger"
+    val kafkaBrokers = config.as[String]("kafka.brokers")
+    val readTopic = config.as[String]("kafka.topics.feeds")
+    val writeTopic = config.as[String]("kafka.topics.articles")
+    val groupId = config.as[String]("kafka.groups.tagArticles")
 
-    val dbPediaBaseUrl = "http://192.168.99.100:2230"
-    val lang = "it"
+    val dbPediaBaseUrl = config.as[String]("dbPedia.it.baseUrl")
+    val lang = config.as[String]("dbPedia.it.lang")
+
     implicit val dbpedia = new DBpediaSpotLight(dbPediaBaseUrl, lang)
     val locExtractor = new FocusLocation(esHosts, locationsIndexPath, clusterName)
 
-    val source = feedItemsSource(kafkaBrokers, readTopic, grouId)
+    val source = feedItemsSource(kafkaBrokers, readTopic, groupId)
 
     val taggedArticles = source
       .groupedWithin(50, 20 seconds)
