@@ -3,15 +3,17 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer, Supervision }
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
 import com.softwaremill.react.kafka.ReactiveKafka
+import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{ Feed, SchedulerData }
+import it.dtk.model.{Feed, SchedulerData}
 import it.dtk.protobuf._
 import it.dtk.reactive.helpers._
+import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -21,8 +23,8 @@ import org.json4s.jackson.Serialization
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 09/03/16.
- */
+  * Created by fabiofumarola on 09/03/16.
+  */
 object FeedToNews {
 
   val decider: Supervision.Decider = {
@@ -40,16 +42,19 @@ object FeedToNews {
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
 
   def main(args: Array[String]) {
-    val esHosts = "192.168.99.100:9300"
-    val feedsIndexPath = "wtl/feeds"
-    val clusterName = "wheretolive"
 
-    val hostname = "wheretolive.it"
-    val batchSize = 10
+    val config = ConfigFactory.load(selectConfig(args)).getConfig("reactive_wtl")
+
+    //Elasticsearch Params
+    val esHosts = config.as[String]("elastic.hosts")
+    val feedsIndexPath = config.as[String]("elastic.docs.feeds")
+    val clusterName = config.as[String]("elastic.clusterName")
+    val hostname = config.as[String]("hostname")
+    val batchSize = config.as[Int]("elastic.feeds.batch_size")
 
     //Kafka Params
-    val kafkaBrokers = "192.168.99.100:9092"
-    val topic = "feed_items"
+    val kafkaBrokers = config.as[String]("kafka.brokers")
+    val topic = config.as[String]("kafka.topics.feeds")
 
     val client = new ElasticQueryTerms(esHosts, feedsIndexPath, clusterName).client
 
