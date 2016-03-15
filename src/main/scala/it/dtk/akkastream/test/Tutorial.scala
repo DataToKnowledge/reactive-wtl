@@ -2,6 +2,7 @@ package it.dtk.akkastream.test
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.stream.FanInShape.{ Init, Name }
 import akka.stream._
 import akka.stream.scaladsl._
@@ -11,6 +12,19 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util._
 import scala.concurrent.duration._
+
+object LogExample extends App {
+
+  implicit val actorSystem = ActorSystem("Tutorial")
+  implicit val materializer = ActorMaterializer()
+  implicit val executor = actorSystem.dispatcher
+
+  val f = Source(1 to 100).log("before-map")
+    .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
+    .map(List(_))
+    .to(Sink.foreach(println)).run()
+
+}
 
 object Tutorial0 extends App {
 

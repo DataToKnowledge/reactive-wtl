@@ -3,11 +3,11 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
-import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
+import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
+import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
 import it.dtk._
 import it.dtk.model.Feed
 import it.dtk.protobuf._
@@ -17,12 +17,13 @@ import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization._
 import org.reactivestreams.Subscriber
+import it.dtk.GanderHelper
 
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
+ * Created by fabiofumarola on 08/03/16.
+ */
 object helpers {
   val web = HttpDownloader
   val feedExtr = RomeFeedHelper
@@ -52,7 +53,7 @@ object helpers {
   }
 
   def saveToElastic(feeds: Source[Feed, NotUsed], client: ElasticClient, indexPath: String,
-                    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): Unit = {
+    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): Unit = {
     implicit val builder = new RequestBuilder[Feed] {
 
       import ElasticDsl._

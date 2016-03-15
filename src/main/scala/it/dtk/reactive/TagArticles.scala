@@ -3,10 +3,10 @@ package it.dtk.reactive
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Supervision }
+import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
-import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
+import it.dtk.nlp.{ DBpediaSpotLight, FocusLocation }
 import it.dtk.protobuf.Annotation.DocumentSection
 import it.dtk.protobuf._
 import it.dtk.reactive.helpers._
@@ -17,11 +17,11 @@ import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.Serialization
 
 import scala.concurrent.duration._
-import scala.language.{implicitConversions, postfixOps}
+import scala.language.{ implicitConversions, postfixOps }
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
+ * Created by fabiofumarola on 09/03/16.
+ */
 object TagArticles {
 
   val decider: Supervision.Decider = {

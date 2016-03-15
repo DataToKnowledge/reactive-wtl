@@ -2,12 +2,12 @@ package it.dtk.reactive
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Supervision }
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
-import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
+import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
+import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.protobuf._
@@ -20,8 +20,8 @@ import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization._
 
 /**
-  * Created by fabiofumarola on 10/03/16.
-  */
+ * Created by fabiofumarola on 10/03/16.
+ */
 object ArticlesToElastic {
 
   implicit val actorSystem = ActorSystem("FeedToNews")
@@ -57,7 +57,6 @@ object ArticlesToElastic {
     val readTopic = config.as[String]("kakfa.topics.articles")
     val groupId = config.as[String]("kafka.groups.articlesEs")
 
-
     val client = new ElasticQueryTerms(esHosts, feedsIndexPath, clusterName).client
 
     val articles = articleSource(kafkaBrokers, readTopic, groupId)
@@ -80,7 +79,7 @@ object ArticlesToElastic {
   }
 
   def saveToElastic(articles: Source[Article, NotUsed], client: ElasticClient,
-                    indexPath: String, batchSize: Int, concurrentReqs: Int): Unit = {
+    indexPath: String, batchSize: Int, concurrentReqs: Int): Unit = {
 
     implicit val builder = new RequestBuilder[Article] {
 
