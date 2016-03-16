@@ -2,8 +2,8 @@ package it.dtk.reactive
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializerSettings, Supervision, ActorMaterializer }
-import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
@@ -40,7 +40,7 @@ object QueryTermsToNews {
 
   def main(args: Array[String]) {
     //Elasticsearch Params
-    val esHosts = "192.168.99.100:9300"
+    val esHosts = "localhost:9300"
     val esIndexPath = "wtl/query_terms"
     val clusterName = "wheretolive"
     val hostname = "wheretolive.it"
@@ -49,7 +49,7 @@ object QueryTermsToNews {
     val batchSize = 5
 
     //Kafka Params
-    val kafkaBrokers = "192.168.99.100:9092"
+    val kafkaBrokers = "localhost:9092"
     val topic = "feed_items"
 
     val client = new ElasticQueryTerms(esHosts, esIndexPath, clusterName).client
