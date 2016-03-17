@@ -3,11 +3,11 @@ package it.dtk.reactive
 import akka.actor.ActorSystem
 import akka.stream.{ ActorMaterializerSettings, ActorMaterializer, Supervision }
 import com.softwaremill.react.kafka.ReactiveKafka
-import it.dtk.reactive.jobs.{ ArticlesToElastic, TagArticles, FeedToNews, QueryTermsToNews }
+import it.dtk.reactive.jobs._
 import org.rogach.scallop._
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val jobs = List("QueryTerms", "Feeds", "TagArticles", "ToElastic")
+  val jobs = List("QueryTerms", "Feeds", "TagArticles", "ToElastic", "InitIndex")
   val envs = List("mac", "linux", "docker")
 
   val jobName = opt[String](descr = s"name of the job to run in $jobs", required = true)
@@ -33,7 +33,7 @@ object Boot {
     val conf = new Conf(args)
 
     val decider: Supervision.Decider = {
-      case ex => Supervision.Restart
+      case ex => Supervision.Resume
     }
 
     implicit val actorSystem = ActorSystem("ReactiveWtl")
@@ -50,6 +50,7 @@ object Boot {
       case Some("Feeds") => new FeedToNews(configFile, kafka).run()
       case Some("TagArticles") => new TagArticles(configFile, kafka).run()
       case Some("ToElastic") => new ArticlesToElastic(configFile, kafka).run()
+      case Some("InitIndex") => new InitIndex(configFile).run()
       case _ =>
         conf.printHelp()
         System.exit(1)
