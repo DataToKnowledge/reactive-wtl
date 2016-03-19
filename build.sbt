@@ -1,7 +1,7 @@
 lazy val commons = Seq(
   organization := "it.datatoknowledge",
   name := "reactive-wtl",
-  version := "0.1.0",
+  version := "1.0",
   scalaVersion := "2.11.7",
   scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
   resolvers ++= Seq(
