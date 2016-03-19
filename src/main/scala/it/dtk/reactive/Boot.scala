@@ -7,7 +7,7 @@ import it.dtk.reactive.jobs._
 import org.rogach.scallop._
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val jobs = List("QueryTerms", "Feeds", "TagArticles", "ToElastic", "InitIndex")
+  val jobs = List("TermsToKafka", "FeedsToKafka", "ProcessTerms", "ProcessFeeds", "TagArticles", "ToElastic", "InitIndex")
   val envs = List("mac", "linux", "docker")
 
   val jobName = opt[String](descr = s"name of the job to run in $jobs", required = true)
@@ -46,8 +46,10 @@ object Boot {
     val configFile = selectConfigFile(conf.env.get.get)
 
     conf.jobName.get match {
-      case Some("QueryTerms") => new QueryTermsToNews(configFile, kafka).run()
-      case Some("Feeds") => new FeedToNews(configFile, kafka).run()
+      case Some("TermsToKafka") => new QueryTermsToKafka(configFile,kafka).run()
+      case Some("FeedsToKafka") => new FeedsToKafka(configFile,kafka).run()
+      case Some("ProcessTerms") => new ProcessQueryTerms(configFile, kafka).run()
+      case Some("ProcessFeeds") => new ProcessFeeds(configFile, kafka).run()
       case Some("TagArticles") => new TagArticles(configFile, kafka).run()
       case Some("ToElastic") => new ArticlesToElastic(configFile, kafka).run()
       case Some("InitIndex") => new InitIndex(configFile).run()
