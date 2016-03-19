@@ -59,7 +59,7 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)
     val feedArticles = feedSource().
       via(extractArticles())
       .map { fa =>
-        println(s"processed feed ${fa._1.url} articles extracted ${fa._2.lenght}")
+        println(s"processed feed ${fa._1.url} articles extracted ${fa._2.size}")
         fa
       }
 
@@ -72,7 +72,7 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)
       val printFeed = Flow[Feed].map { f => println(f); f }
 
       feedArticles ~> unzip.in
-      unzip.out0 ~> printFeed ~> feedsSink
+      unzip.out0 ~> feedsSink
       unzip.out1 ~> processArticles() ~> Sink.fromSubscriber(kafkaSink)
       ClosedShape
     }
