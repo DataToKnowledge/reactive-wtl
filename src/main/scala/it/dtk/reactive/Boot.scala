@@ -46,8 +46,8 @@ object Boot {
     val configFile = selectConfigFile(conf.env.get.get)
 
     conf.jobName.get match {
-      case Some("TermsToKafka") => new QueryTermsToKafka(configFile,kafka).run()
-      case Some("FeedsToKafka") => new FeedsToKafka(configFile,kafka).run()
+      case Some("TermsToKafka") => new QueryTermsToKafka(configFile, kafka).run()
+      case Some("FeedsToKafka") => new FeedsToKafka(configFile, kafka).run()
       case Some("ProcessTerms") => new ProcessQueryTerms(configFile, kafka).run()
       case Some("ProcessFeeds") => new ProcessFeeds(configFile, kafka).run()
       case Some("TagArticles") => new TagArticles(configFile, kafka).run()

@@ -2,16 +2,16 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ClosedShape, ActorMaterializer}
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.softwaremill.react.kafka.{ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka}
+import akka.stream.{ ClosedShape, ActorMaterializer }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+import com.softwaremill.react.kafka.{ ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticFeeds
 import it.dtk.model._
 import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.helpers._
 import net.ceedubs.ficus.Ficus._
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer}
+import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringDeserializer }
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -23,10 +23,9 @@ import org.reactivestreams.Subscriber
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
-class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)
-                       (implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
+ * Created by fabiofumarola on 08/03/16.
+ */
+class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -50,7 +49,6 @@ class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)
       valueSerializer = new ByteArraySerializer()
     ))
 
-
   val client = new ElasticFeeds(esHosts, feedsIndexPath, clusterName).client
 
   def run(): Unit = {
@@ -66,9 +64,13 @@ class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)
       import GraphDSL.Implicits._
 
       val bcast = b.add(Broadcast[Article](2))
+      val printArticle = Flow[Article].map { a =>
+        println(s"Processed article ${a.uri} from Query Terms")
+        a
+      }
 
       articles ~> bcast.in
-      bcast.out(0) ~> Flow[Article].map(a => ProducerMessage(a.uri.getBytes, a.toByteArray())) ~> Sink.fromSubscriber(kafkaSink)
+      bcast.out(0) ~> printArticle ~> Flow[Article].map(a => ProducerMessage(a.uri.getBytes, a.toByteArray())) ~> Sink.fromSubscriber(kafkaSink)
       bcast.out(1) ~> feedFlow() ~> feedsSink
       ClosedShape
     }

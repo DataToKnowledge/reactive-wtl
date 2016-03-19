@@ -3,17 +3,17 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ClosedShape, ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings, Supervision }
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka}
+import com.softwaremill.react.kafka.{ ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{QueryTerm, Feed, SchedulerData}
+import it.dtk.model.{ QueryTerm, Feed, SchedulerData }
 import it.dtk.protobuf._
 import helpers._
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer}
+import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringDeserializer }
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -25,11 +25,11 @@ import org.reactivestreams.Subscriber
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
-class ProcessFeeds(configFile: String, kafka: ReactiveKafka)
-                  (implicit val system: ActorSystem,
-                   implicit val mat: ActorMaterializer) {
+ * Created by fabiofumarola on 09/03/16.
+ */
+class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params

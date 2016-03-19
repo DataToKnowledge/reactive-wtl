@@ -6,8 +6,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
-import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
+import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
+import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model.News
@@ -22,11 +22,11 @@ import org.json4s.jackson.Serialization._
 import ElasticDsl._
 
 /**
-  * Created by fabiofumarola on 10/03/16.
-  */
+ * Created by fabiofumarola on 10/03/16.
+ */
 class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
-                                                                  val system: ActorSystem,
-                                                                  implicit val mat: ActorMaterializer) {
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -49,6 +49,8 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
   def run() {
     val articles = articleSource()
 
+    var counter = 1
+
     val mappedArticles = articles
       .map { a =>
         News(
@@ -66,7 +68,11 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
           focusLocation = a.focusLocation
         )
       }
-      .map { n => println(s"savig news ${n.uri}"); n }
+      .map { n =>
+        println(s" $counter savig news ${n.uri}")
+        counter += 1
+        n
+      }
       .to(elasticSink()).run()
   }
 

@@ -2,15 +2,15 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{SinkShape, ActorMaterializer}
+import akka.stream.{ SinkShape, ActorMaterializer }
 import akka.stream.scaladsl._
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ProducerProperties, ProducerMessage, ReactiveKafka}
+import com.softwaremill.react.kafka.{ ProducerProperties, ProducerMessage, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
-import it.dtk.es.{ElasticFeeds, ElasticQueryTerms}
-import it.dtk.model.{Feed, SchedulerData}
+import it.dtk.es.{ ElasticFeeds, ElasticQueryTerms }
+import it.dtk.model.{ Feed, SchedulerData }
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
 import net.ceedubs.ficus.Ficus._
@@ -28,10 +28,9 @@ import scala.language.implicitConversions
 import scala.concurrent.duration._
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
-class FeedsToKafka(configFile: String, kafka: ReactiveKafka)
-                  (implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
+ * Created by fabiofumarola on 09/03/16.
+ */
+class FeedsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
