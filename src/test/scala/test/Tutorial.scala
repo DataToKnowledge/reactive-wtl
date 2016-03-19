@@ -3,7 +3,7 @@ package it.dtk.akkastream.test
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.FanInShape.{ Init, Name }
+import akka.stream.FanInShape.{Init, Name}
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
@@ -12,6 +12,21 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util._
 import scala.concurrent.duration._
+
+object scheduledSource extends App {
+  implicit val actorSystem = ActorSystem("Tutorial")
+  implicit val materializer = ActorMaterializer()
+  implicit val executor = actorSystem.dispatcher
+
+  val rescheduled = Source(1 to 100)
+
+  val source = Source.tick(0 millis, 100 millis, rescheduled)
+
+  source
+    .flatMapConcat(identity)
+    .runForeach(println)
+}
+
 
 object LogExample extends App {
 
@@ -39,8 +54,8 @@ object Tutorial0 extends App {
 }
 
 /**
- * Created by fabiofumarola on 08/03/16.
- */
+  * Created by fabiofumarola on 08/03/16.
+  */
 object Tutorial extends App {
 
   implicit val actorSystem = ActorSystem("Tutorial")
@@ -180,10 +195,10 @@ object SimpleCombination extends App {
 }
 
 case class PriorityWorkerPoolShape[In, Out](
-    jobsIn: Inlet[In],
-    priorityIn: Inlet[In],
-    result: Outlet[Out]
-) extends Shape {
+                                             jobsIn: Inlet[In],
+                                             priorityIn: Inlet[In],
+                                             result: Outlet[Out]
+                                           ) extends Shape {
 
   override def inlets: immutable.Seq[Inlet[_]] = jobsIn :: priorityIn :: Nil
 
@@ -205,7 +220,7 @@ case class PriorityWorkerPoolShape[In, Out](
 }
 
 case class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool"))
-    extends FanInShape[Out](_init) {
+  extends FanInShape[Out](_init) {
   override protected def construct(init: Init[Out]): FanInShape[Out] = new PriorityWorkerPoolShape2(init)
 
   val jobsIn = newInlet[In]("jobsIn")
@@ -215,9 +230,9 @@ case class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWo
 
 object PriorityWorkerPool {
   def apply[In, Out](
-    worker: Flow[In, Out, Any],
-    workerCount: Int
-  ): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
+                      worker: Flow[In, Out, Any],
+                      workerCount: Int
+                    ): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
 
     GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._

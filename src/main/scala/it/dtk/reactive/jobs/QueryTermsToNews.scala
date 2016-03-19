@@ -20,6 +20,7 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 
 import scala.language.implicitConversions
+import scala.concurrent.duration._
 
 /**
  * Created by fabiofumarola on 08/03/16.
@@ -81,6 +82,8 @@ class QueryTermsToNews(configFile: String, kafka: ReactiveKafka)(implicit
     }
 
     val publisher: ScrollPublisher = client.publisher(termsDocPath, keepAlive = "180m")
+
+
 
     val toCheckQueries = Source.fromPublisher(publisher)
       .map(res => res.as[QueryTerm])
