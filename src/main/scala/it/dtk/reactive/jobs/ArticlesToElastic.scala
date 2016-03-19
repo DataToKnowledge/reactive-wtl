@@ -6,8 +6,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
-import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
+import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
+import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model.News
@@ -22,11 +22,11 @@ import org.json4s.jackson.Serialization._
 import ElasticDsl._
 
 /**
- * Created by fabiofumarola on 10/03/16.
- */
+  * Created by fabiofumarola on 10/03/16.
+  */
 class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                                                  val system: ActorSystem,
+                                                                  implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -42,7 +42,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
   val readTopic = config.as[String]("kafka.topics.articles")
-  val groupId = config.as[String]("kafka.groups.articlesEs")
+  val groupId = config.as[String]("kafka.groups.articles_es")
 
   val client = new ElasticQueryTerms(esHosts, feedsIndexPath, clusterName).client
 
@@ -66,8 +66,8 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
           focusLocation = a.focusLocation
         )
       }
-
-    saveToElastic(mappedArticles)
+      .map { n => println(s"savig news ${n.uri}"); n }
+      .to(elasticSink()).run()
   }
 
   def articleSource(): Source[Article, NotUsed] = {
@@ -83,7 +83,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
       .map(rec => Article.parseFrom(rec.value()))
   }
 
-  def saveToElastic(articles: Source[News, NotUsed]) = {
+  def elasticSink(): Sink[News, NotUsed] = {
     implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
 
     implicit val builder = new RequestBuilder[News] {
@@ -96,10 +96,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
       concurrentRequests = parallel,
       completionFn = () => println("all done")
     )
-
-    articles.
-      map { n => println(s"savig news ${n.uri}"); n }
-      .runWith(Sink.fromSubscriber(elasticSink))
+    Sink.fromSubscriber(elasticSink)
   }
 
 }

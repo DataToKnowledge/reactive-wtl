@@ -12,6 +12,7 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util._
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object scheduledSource extends App {
   implicit val actorSystem = ActorSystem("Tutorial")

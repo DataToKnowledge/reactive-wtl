@@ -4,9 +4,9 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
+import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
-import it.dtk.nlp.{ DBpediaSpotLight, FocusLocation }
+import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
 import it.dtk.protobuf.Annotation.DocumentSection
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
@@ -14,14 +14,14 @@ import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.duration._
-import scala.language.{ implicitConversions, postfixOps }
+import scala.language.{implicitConversions, postfixOps}
 
 /**
- * Created by fabiofumarola on 09/03/16.
- */
+  * Created by fabiofumarola on 09/03/16.
+  */
 class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                                            val system: ActorSystem,
+                                                            implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -33,9 +33,9 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
 
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
-  val readTopic = config.as[String]("kafka.topics.feeds")
+  val consumerGroup = config.as[String]("kafka.groups.tag_articles")
+  val readTopic = config.as[String]("kafka.topics.feed_items")
   val writeTopic = config.as[String]("kafka.topics.articles")
-  val groupId = config.as[String]("kafka.groups.tagArticles")
 
   val dbPediaBaseUrl = config.as[String]("dbPedia.it.baseUrl")
   val lang = config.as[String]("dbPedia.it.lang")
@@ -58,7 +58,7 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
       a.copy(focusLocation = location)
     }
 
-    saveArticlesToKafkaProtobuf(focusLocationArticles, kafka, kafkaBrokers, writeTopic)
+    saveArticlesToKafka(focusLocationArticles, kafka, kafkaBrokers, writeTopic).run()
 
     system.registerOnTermination({
       dbpedia.close()
@@ -69,7 +69,7 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
     val publisher = kafka.consume(ConsumerProperties(
       bootstrapServers = kafkaBrokers,
       topic = readTopic,
-      groupId = groupId,
+      groupId = consumerGroup,
       valueDeserializer = new ByteArrayDeserializer()
     ))
 
@@ -100,5 +100,4 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
     val annotations = titleAn ++ descrAn ++ textAn ++ keywordAn
     a.copy(annotations = annotations.toList)
   }
-
 }
