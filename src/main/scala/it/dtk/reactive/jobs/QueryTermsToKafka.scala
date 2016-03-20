@@ -5,11 +5,11 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, SinkShape}
+import akka.stream.{ ActorMaterializer, SinkShape }
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
+import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
@@ -27,11 +27,11 @@ import org.json4s.jackson.Serialization._
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.duration._
-import scala.language.{implicitConversions, postfixOps}
+import scala.language.{ implicitConversions, postfixOps }
 
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
+ * Created by fabiofumarola on 08/03/16.
+ */
 class QueryTermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -56,7 +56,6 @@ class QueryTermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val s
 
   val inlufxDB = new InfluxDBWrapper(config)
 
-
   def run(): Unit = {
     queryTermSource.to(kafkaSink()).run()
 
@@ -65,13 +64,14 @@ class QueryTermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val s
         terms.to(kafkaSink()).run()
         DateTime.now()
       }.runWith(Sink.foreach { d =>
-      println(s" ${d} extracted query terms")
+        println(s" ${d} extracted query terms")
 
-      inlufxDB.write("TermsToKafka",
-        Map("extracted" -> d.getMillis),
-        Map()
-      )
-    })
+        inlufxDB.write(
+          "TermsToKafka",
+          Map("extracted" -> d.getMillis),
+          Map()
+        )
+      })
   }
 
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all

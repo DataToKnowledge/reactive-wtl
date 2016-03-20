@@ -3,34 +3,28 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ClosedShape, ActorMaterializer, ActorMaterializerSettings, Supervision}
-import com.sksamuel.elastic4s._
-import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka}
+import akka.stream.{ActorMaterializer, ClosedShape}
+import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{QueryTerm, Feed, SchedulerData}
+import it.dtk.model.{Feed, SchedulerData}
 import it.dtk.protobuf._
-import helpers._
+import it.dtk.reactive.jobs.helpers._
 import it.dtk.reactive.util.InfluxDBWrapper
+import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer}
 import org.joda.time.DateTime
-import org.json4s.NoTypeHints
-import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization
-import net.ceedubs.ficus.Ficus._
 import org.reactivestreams.Subscriber
 
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
+ * Created by fabiofumarola on 09/03/16.
+ */
 class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
-                                                             val system: ActorSystem,
-                                                             implicit val mat: ActorMaterializer) {
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -64,7 +58,8 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
       .map { fa =>
         println(s"processed feed ${fa._1.url} articles extracted ${fa._2.size}")
 
-        inlufxDB.write("ProcessFeeds",
+        inlufxDB.write(
+          "ProcessFeeds",
           Map("url" -> fa._1.url, "articles" -> fa._2.size),
           Map()
         )

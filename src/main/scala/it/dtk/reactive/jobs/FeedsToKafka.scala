@@ -20,13 +20,13 @@ import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization._
 import org.reactivestreams.Subscriber
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.language.implicitConversions
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
+ * Created by fabiofumarola on 09/03/16.
+ */
 class FeedsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
 

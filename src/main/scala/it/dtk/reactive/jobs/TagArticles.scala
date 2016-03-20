@@ -4,9 +4,9 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
+import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
-import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
+import it.dtk.nlp.{ DBpediaSpotLight, FocusLocation }
 import it.dtk.protobuf.Annotation.DocumentSection
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
@@ -15,14 +15,14 @@ import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.duration._
-import scala.language.{implicitConversions, postfixOps}
+import scala.language.{ implicitConversions, postfixOps }
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
+ * Created by fabiofumarola on 09/03/16.
+ */
 class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
-                                                            val system: ActorSystem,
-                                                            implicit val mat: ActorMaterializer) {
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -62,7 +62,8 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
     }.map { a =>
       println(s"extracted annotations and focus location for article ${a.uri}")
 
-      inlufxDB.write("TagArticles",
+      inlufxDB.write(
+        "TagArticles",
         Map("url" -> a.uri, "annotations" -> a.annotations.size, "location" -> a.focusLocation.isDefined),
         Map("publisher" -> a.publisher)
       )

@@ -8,8 +8,8 @@ import org.influxdb.InfluxDBFactory
 import org.influxdb.dto._
 
 /**
-  * Created by fabiofumarola on 20/03/16.
-  */
+ * Created by fabiofumarola on 20/03/16.
+ */
 class InfluxDBWrapper(config: Config) {
 
   val host = config.as[String]("influxdb.host")
@@ -22,7 +22,6 @@ class InfluxDBWrapper(config: Config) {
   dbConn.enableBatch(2000, 100, TimeUnit.MILLISECONDS)
 
   val retention = "default"
-
 
   def write(point: Point): Unit = {
     dbConn.write(dbName, retention, point)
