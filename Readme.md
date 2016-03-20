@@ -30,10 +30,10 @@ kafka-topics.sh --zookeeper zoo-1:2181,zoo-2:2181 --create --topic articles --re
 
 ```
 
-### Index Creation and Initial QueryTerms
+### Index Initialization
+To init the index 
 
 
-1. Start the docker container ...
 
 2. log to jupyter notebook and add query terms
 

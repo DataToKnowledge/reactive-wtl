@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker.{ExecCmd, Cmd}
+
 lazy val commons = Seq(
   organization := "it.datatoknowledge",
   name := "reactive-wtl",
@@ -12,7 +14,7 @@ lazy val commons = Seq(
 )
 
 lazy val root = (project in file("."))
-  .enablePlugins(SbtScalariform, DockerPlugin,JavaAppPackaging)
+  .enablePlugins(SbtScalariform, DockerPlugin, JavaAppPackaging)
   .settings(commons: _*)
   .settings(
     libraryDependencies ++= Seq(
@@ -32,7 +34,13 @@ lazy val algocore = (project in file("./algocore"))
 
 maintainer in Docker := "info@datatotknowledge.it"
 version in Docker := version.value
-dockerBaseImage := "java:8-jre-alpine"
+dockerBaseImage := "java:8-jre"
+
+//dockerCommands ++=  Seq(
+//  ExecCmd("RUN", "apk update"),
+//  ExecCmd("RUN", " apk add bash")
+//)
+
 //dockerExposedPorts := Seq(9000)
 dockerExposedVolumes := Seq("/opt/docker/logs")
 dockerRepository := Option("data2knowledge")
