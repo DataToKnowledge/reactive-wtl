@@ -6,12 +6,13 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.sksamuel.elastic4s.{ BulkCompatibleDefinition, ElasticClient, ElasticDsl }
-import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
+import com.sksamuel.elastic4s.{BulkCompatibleDefinition, ElasticClient, ElasticDsl}
+import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model.News
 import it.dtk.protobuf._
+import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.joda.time.DateTime
@@ -22,11 +23,11 @@ import org.json4s.jackson.Serialization._
 import ElasticDsl._
 
 /**
- * Created by fabiofumarola on 10/03/16.
- */
+  * Created by fabiofumarola on 10/03/16.
+  */
 class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                                                  val system: ActorSystem,
+                                                                  implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -45,6 +46,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
   val groupId = config.as[String]("kafka.groups.articles_es")
 
   val client = new ElasticQueryTerms(esHosts, feedsIndexPath, clusterName).client
+  val inlufxDB = new InfluxDBWrapper(config)
 
   def run() {
     val articles = articleSource()
@@ -70,6 +72,11 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
       }
       .map { n =>
         println(s" $counter savig news ${n.uri}")
+
+        inlufxDB.write("ToElastic",
+          Map("url" -> n.uri),
+          Map()
+        )
         counter += 1
         n
       }

@@ -47,10 +47,6 @@ object helpers {
 
     articles
       .map { a =>
-        println(s"tagged article with uri ${a.uri}")
-        a
-      }
-      .map { a =>
         ProducerMessage(a.uri.getBytes, a.toByteArray())
       }.to(Sink.fromSubscriber(kafkaSink))
   }
