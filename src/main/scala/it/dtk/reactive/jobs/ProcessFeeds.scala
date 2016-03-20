@@ -3,17 +3,18 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings, Supervision }
+import akka.stream.{ClosedShape, ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka }
+import com.softwaremill.react.kafka.{ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{ QueryTerm, Feed, SchedulerData }
+import it.dtk.model.{QueryTerm, Feed, SchedulerData}
 import it.dtk.protobuf._
 import helpers._
-import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringDeserializer }
+import it.dtk.reactive.util.InfluxDBWrapper
+import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer}
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -25,11 +26,11 @@ import org.reactivestreams.Subscriber
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 09/03/16.
- */
+  * Created by fabiofumarola on 09/03/16.
+  */
 class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                                             val system: ActorSystem,
+                                                             implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -55,11 +56,19 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
 
   val client = new ElasticQueryTerms(esHosts, feedsDocPath, clusterName).client
 
+  val inlufxDB = new InfluxDBWrapper(config)
+
   def run(): Unit = {
     val feedArticles = feedSource().
       via(extractArticles())
       .map { fa =>
         println(s"processed feed ${fa._1.url} articles extracted ${fa._2.size}")
+
+        inlufxDB.write("ProcessFeeds",
+          Map("url" -> fa._1.url, "articles" -> fa._2.size),
+          Map()
+        )
+
         fa
       }
 

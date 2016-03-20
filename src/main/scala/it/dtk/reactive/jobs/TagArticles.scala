@@ -4,24 +4,25 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
+import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
-import it.dtk.nlp.{ DBpediaSpotLight, FocusLocation }
+import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
 import it.dtk.protobuf.Annotation.DocumentSection
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
+import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.duration._
-import scala.language.{ implicitConversions, postfixOps }
+import scala.language.{implicitConversions, postfixOps}
 
 /**
- * Created by fabiofumarola on 09/03/16.
- */
+  * Created by fabiofumarola on 09/03/16.
+  */
 class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                                            val system: ActorSystem,
+                                                            implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -43,6 +44,8 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
   implicit val dbpedia = new DBpediaSpotLight(dbPediaBaseUrl, lang)
   val locExtractor = new FocusLocation(esHosts, locationsDocPath, clusterName)
 
+  val inlufxDB = new InfluxDBWrapper(config)
+
   def run() {
     val taggedArticles = feedItemsSource()
       .groupedWithin(50, 20 seconds)
@@ -56,6 +59,14 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
     val focusLocationArticles = taggedArticles.map { a =>
       val location = locExtractor.findMainLocation(a)
       a.copy(focusLocation = location)
+    }.map { a =>
+      println(s"extracted annotations and focus location for article ${a.uri}")
+
+      inlufxDB.write("TagArticles",
+        Map("url" -> a.uri, "annotations" -> a.annotations.size, "location" -> a.focusLocation.isDefined),
+        Map("publisher" -> a.publisher)
+      )
+      a
     }
 
     saveArticlesToKafka(focusLocationArticles, kafka, kafkaBrokers, writeTopic).run()

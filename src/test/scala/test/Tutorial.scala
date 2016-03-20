@@ -14,6 +14,19 @@ import scala.util._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+object materializedMat extends App {
+  implicit val actorSystem = ActorSystem("Tutorial")
+  implicit val materializer = ActorMaterializer()
+  implicit val executor = actorSystem.dispatcher
+
+  val source = Source(1 to 100)
+
+  val r = source.toMat(Sink.seq)(Keep.right)
+
+  r.run().foreach(seq => println(seq))
+}
+
+
 object scheduledSource extends App {
   implicit val actorSystem = ActorSystem("Tutorial")
   implicit val materializer = ActorMaterializer()
