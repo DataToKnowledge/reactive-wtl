@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.{ExecCmd, Cmd}
 lazy val commons = Seq(
   organization := "it.datatoknowledge",
   name := "reactive-wtl",
-  version := "1.0",
+  version := "1.1",
   scalaVersion := "2.11.7",
   scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
   resolvers ++= Seq(
