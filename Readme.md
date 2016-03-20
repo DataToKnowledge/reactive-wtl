@@ -30,11 +30,18 @@ kafka-topics.sh --zookeeper zoo-1:2181,zoo-2:2181 --create --topic articles --re
 
 ```
 
+### Check all services are running
+
+- influxdb
+- kafka
+- dbpedia
+- elastic
+- jupyter
+
 ### Index Initialization
 To init the index 
 
-
-
+1. run the docker `docker run -it --rm data2knowledge/reactive-wtl:1.1`
 2. log to jupyter notebook and add query terms
 
 ### Start services
