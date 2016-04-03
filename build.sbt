@@ -21,7 +21,7 @@ lazy val root = (project in file("."))
       "com.softwaremill.reactivekafka" %% "reactive-kafka-core" % "0.10.0",
       //      "org.slf4j" % "slf4j-nop" % "1.7.18",
       "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.0",
-      "com.typesafe.akka" %% "akka-http-core" % "2.4.2",
+      "com.typesafe.akka" %% "akka-http-core" % "2.4.3",
       "org.rogach" %% "scallop" % "1.0.0",
       "org.influxdb" % "influxdb-java" % "2.1"
     )
@@ -37,10 +37,6 @@ maintainer in Docker := "info@datatotknowledge.it"
 version in Docker := version.value
 dockerBaseImage := "java:8-jre"
 
-//dockerCommands ++=  Seq(
-//  ExecCmd("RUN", "apk update"),
-//  ExecCmd("RUN", " apk add bash")
-//)
 
 //dockerExposedPorts := Seq(9000)
 dockerExposedVolumes := Seq("/opt/docker/logs")
