@@ -8,10 +8,10 @@ import com.sksamuel.elastic4s.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
+import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.News
+import it.dtk.model.{SemanticTag, News}
 import it.dtk.protobuf._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
@@ -23,11 +23,10 @@ import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization._
 
 /**
- * Created by fabiofumarola on 10/03/16.
- */
-class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+  * Created by fabiofumarola on 10/03/16.
+  */
+class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem,
+                                                                  implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -55,7 +54,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
 
     val mappedArticles = articles
       .map { a =>
-        News(
+        val n = News(
           uri = a.uri,
           title = a.title,
           description = a.description,
@@ -66,22 +65,33 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
           date = new DateTime(a.date),
           lang = a.lang,
           text = a.cleanedText,
-          annotations = a.annotations,
-          focusLocation = a.focusLocation
-        )
-      }
-      .map { n =>
-        println(s" $counter savig news ${n.uri}")
+          annotations = convertAnnotations(a.annotations),
+          focusLocation = a.focusLocation)
 
-        inlufxDB.write(
-          "ToElastic",
-          Map("url" -> n.uri),
-          Map()
-        )
-        counter += 1
         n
-      }
+      }.map { n =>
+      println(s" $counter savig news ${n.uri}")
+
+      inlufxDB.write(
+        "ToElastic",
+        Map("url" -> n.uri),
+        Map())
+      counter += 1
+      n
+    }
       .to(elasticSink()).run()
+  }
+
+  def convertAnnotations(annotations: Seq[Annotation]): Seq[SemanticTag] = {
+    annotations.groupBy(_.surfaceForm.toLowerCase).map {
+      case (name, list) =>
+        SemanticTag(
+          name = name.capitalize,
+          wikipediaUrl = list.head.wikipediaUrl,
+          tags = list.flatMap(_.types).map(_.value).toSet,
+          pin = list.head.pin,
+          support = list.map(_.support).sum / list.length)
+    }.toSeq
   }
 
   def articleSource(): Source[Article, NotUsed] = {
@@ -90,8 +100,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
       bootstrapServers = kafkaBrokers,
       topic = readTopic,
       groupId = groupId,
-      valueDeserializer = new ByteArrayDeserializer()
-    ))
+      valueDeserializer = new ByteArrayDeserializer()))
 
     Source.fromPublisher(publisher)
       .map(rec => Article.parseFrom(rec.value()))
@@ -108,7 +117,8 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
     val elasticSink = client.subscriber[News](
       batchSize = batchSize,
       concurrentRequests = parallel,
-      completionFn = () => println("all done")
+      completionFn = () => println("all done"),
+      errorFn = (ex: Throwable) => println(ex.getLocalizedMessage)
     )
     Sink.fromSubscriber(elasticSink)
   }
