@@ -3,7 +3,7 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, ClosedShape}
+import akka.stream.{ThrottleMode, ActorMaterializer, ClosedShape}
 import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
@@ -20,7 +20,7 @@ import redis.clients.jedis.Jedis
 import redis.clients.util.SafeEncoder
 
 import scala.language.implicitConversions
-
+import scala.concurrent.duration._
 /**
   * Created by fabiofumarola on 09/03/16.
   */
@@ -101,6 +101,7 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
   def processArticles(): Flow[List[Article], ProducerMessage[Array[Byte], Array[Byte]], NotUsed] = Flow[List[Article]]
     .mapConcat(identity)
     .filterNot(a => duplicatedUrl(a.uri))
+    .throttle(1, 1.second, 200, ThrottleMode.Shaping)
     .map(gander.mainContent)
     .map(a => ProducerMessage(a.uri.getBytes, a.toByteArray()))
 

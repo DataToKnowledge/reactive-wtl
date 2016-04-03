@@ -64,10 +64,14 @@ class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)(implicit val s
 
     val articles = queryTermSource()
       .flatMapConcat(q => terms.generateUrls(q.terms, q.lang, hostname))
-      .throttle(1, 1.seconds, 200, ThrottleMode.Shaping)
-//      .map { u => println(u); u }
-      .flatMapConcat(u => terms.getResultsAsArticles(u))
-      .filterNot(a => duplicatedUrl(a.uri))
+      .throttle(1, 1.second, 200, ThrottleMode.Shaping)
+      .flatMapConcat { u =>
+        val data = terms.getResultsAsArticles(u)
+        if (data.isEmpty)
+          println(s"Does not extract data from $u")
+
+        data
+      }.filterNot(a => duplicatedUrl(a.uri))
       .map(gander.mainContent)
 
     val feedsSink = elasticFeedSink(client, feedsIndexPath, batchSize, 2)
