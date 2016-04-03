@@ -17,10 +17,10 @@ log into kafka server and runt the following commmands
 ```bash
 
 kafka-topics.sh --zookeeper zoo-1:2181,zoo-2:2181 --create --topic feeds --replication-factor 2 \
-    --partition 3 --config cleanup.policy=compact --config retention.ms=86400000
+    --partition 3 --config cleanup.policy=compact --config retention.ms=43200000
     
 kafka-topics.sh --zookeeper zoo-1:2181,zoo-2:2181 --create --topic query_terms --replication-factor 2 \
-    --partition 3 --config cleanup.policy=compact --config retention.ms=86400000
+    --partition 3 --config cleanup.policy=compact --config retention.ms=43200000
     
 kafka-topics.sh --zookeeper zoo-1:2181,zoo-2:2181 --create --topic feed_items --replication-factor 2 \
     --partition 3 --config cleanup.policy=compact
