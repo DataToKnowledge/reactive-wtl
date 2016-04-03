@@ -74,7 +74,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
 
       inlufxDB.write(
         "ToElastic",
-        Map("url" -> n.uri),
+        Map("url" -> n.uri, "count" -> counter),
         Map())
       counter += 1
       n

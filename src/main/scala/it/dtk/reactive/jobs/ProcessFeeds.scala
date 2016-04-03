@@ -59,7 +59,6 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
   val jedis = new Jedis(redisHost)
   jedis.select(redisDB)
 
-
   def run(): Unit = {
     val feedArticles = feedSource().
       via(extractArticles())
