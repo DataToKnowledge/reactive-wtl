@@ -16,15 +16,17 @@ import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeseria
 import org.joda.time.DateTime
 import org.json4s.jackson.JsonMethods._
 import org.reactivestreams.Subscriber
+import redis.clients.jedis.Jedis
+import redis.clients.util.SafeEncoder
 
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 09/03/16.
- */
+  * Created by fabiofumarola on 09/03/16.
+  */
 class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                                             val system: ActorSystem,
+                                                             implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -52,18 +54,20 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
 
   val inlufxDB = new InfluxDBWrapper(config)
 
+  val redisHost = config.as[String]("redis.host")
+  val redisDB = config.as[Int]("redis.db")
+  val jedis = new Jedis(redisHost)
+  jedis.select(redisDB)
+
+
   def run(): Unit = {
     val feedArticles = feedSource().
       via(extractArticles())
       .map { fa =>
         println(s"processed feed ${fa._1.url} articles extracted ${fa._2.size}")
-
-        inlufxDB.write(
-          "ProcessFeeds",
-          Map("url" -> fa._1.url, "articles" -> fa._2.size),
-          Map()
+        inlufxDB.write("ProcessFeeds",
+          Map("url" -> fa._1.url, "articles" -> fa._2.size), Map()
         )
-
         fa
       }
 
@@ -84,8 +88,19 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
     RunnableGraph.fromGraph(saveGraph).run()
   }
 
+  def duplicatedUrl(uri: String): Boolean = {
+    val found = Option(jedis.get(uri))
+    
+    if (found.isEmpty) jedis.set(uri, "1")
+    else jedis.incr(uri)
+
+    found.isDefined
+  }
+
+
   def processArticles(): Flow[List[Article], ProducerMessage[Array[Byte], Array[Byte]], NotUsed] = Flow[List[Article]]
     .mapConcat(identity)
+    .filterNot(a => duplicatedUrl(a.uri))
     .map(gander.mainContent)
     .map(a => ProducerMessage(a.uri.getBytes, a.toByteArray()))
 

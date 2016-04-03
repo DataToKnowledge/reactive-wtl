@@ -104,7 +104,7 @@ object GraphTutorial {
         ClosedShape
     })
 
-    println(Await.result(g.run, 300 millis))
+    println(Await.result(g.run, 300.millis))
   }
 
 

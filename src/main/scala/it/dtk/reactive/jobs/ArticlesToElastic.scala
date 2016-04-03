@@ -8,7 +8,7 @@ import com.sksamuel.elastic4s.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
+import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model.News
@@ -23,11 +23,11 @@ import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization._
 
 /**
-  * Created by fabiofumarola on 10/03/16.
-  */
+ * Created by fabiofumarola on 10/03/16.
+ */
 class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
-                                                                  val system: ActorSystem,
-                                                                  implicit val mat: ActorMaterializer) {
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -73,7 +73,8 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
       .map { n =>
         println(s" $counter savig news ${n.uri}")
 
-        inlufxDB.write("ToElastic",
+        inlufxDB.write(
+          "ToElastic",
           Map("url" -> n.uri),
           Map()
         )

@@ -2,9 +2,9 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ ClosedShape, ActorMaterializer }
-import akka.stream.scaladsl.{ Flow, Sink, Source }
-import com.softwaremill.react.kafka.{ ProducerProperties, ProducerMessage, ConsumerProperties, ReactiveKafka }
+import akka.stream.scaladsl.{Flow, Sink, Source, _}
+import akka.stream.{ThrottleMode, Attributes, ActorMaterializer, ClosedShape}
+import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticFeeds
 import it.dtk.model._
@@ -12,20 +12,21 @@ import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.helpers._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
-import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringDeserializer }
+import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer}
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
-import akka.stream.scaladsl._
 import org.reactivestreams.Subscriber
+import redis.clients.jedis.Jedis
+import scala.concurrent.duration._
 
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 08/03/16.
- */
+  * Created by fabiofumarola on 08/03/16.
+  */
 class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -54,11 +55,19 @@ class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)(implicit val s
 
   val inlufxDB = new InfluxDBWrapper(config)
 
+  val redisHost = config.as[String]("redis.host")
+  val redisDB = config.as[Int]("redis.db")
+  val jedis = new Jedis(redisHost)
+  jedis.select(redisDB)
+
   def run(): Unit = {
 
     val articles = queryTermSource()
       .flatMapConcat(q => terms.generateUrls(q.terms, q.lang, hostname))
+      .throttle(1, 1.seconds, 200, ThrottleMode.Shaping)
+//      .map { u => println(u); u }
       .flatMapConcat(u => terms.getResultsAsArticles(u))
+      .filterNot(a => duplicatedUrl(a.uri))
       .map(gander.mainContent)
 
     val feedsSink = elasticFeedSink(client, feedsIndexPath, batchSize, 2)
@@ -87,6 +96,14 @@ class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)(implicit val s
     RunnableGraph.fromGraph(saveGraph).run()
   }
 
+  def duplicatedUrl(uri: String): Boolean = {
+    val found = Option(jedis.get(uri))
+    if (found.isEmpty) jedis.set(uri, "1")
+    else jedis.incr(uri)
+
+    found.isDefined
+  }
+
   def feedFlow(): Flow[Article, Feed, NotUsed] = Flow[Article]
     .map(a => a.publisher -> html.host(a.uri))
     .filter(_._2.nonEmpty)
@@ -100,7 +117,6 @@ class ProcessQueryTerms(configFile: String, kafka: ReactiveKafka)(implicit val s
     }
 
   def queryTermSource(): Source[QueryTerm, NotUsed] = {
-
     val publisher = kafka.consume(ConsumerProperties(
       bootstrapServers = kafkaBrokers,
       topic = readTopic,

@@ -4,7 +4,7 @@ lazy val commons = Seq(
   organization := "it.datatoknowledge",
   name := "reactive-wtl",
   version := "1.1.1",
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.11.8",
   scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
   resolvers ++= Seq(
     "spray repo" at "http://repo.spray.io",
@@ -23,7 +23,8 @@ lazy val root = (project in file("."))
       "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.0",
       "com.typesafe.akka" %% "akka-http-core" % "2.4.3",
       "org.rogach" %% "scallop" % "1.0.0",
-      "org.influxdb" % "influxdb-java" % "2.1"
+      "org.influxdb" % "influxdb-java" % "2.1",
+      "redis.clients" % "jedis" % "2.8.1"
     )
   ) dependsOn algocore
 
