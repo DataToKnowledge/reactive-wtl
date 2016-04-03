@@ -3,10 +3,10 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, SinkShape}
+import akka.stream.{ ActorMaterializer, SinkShape }
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
+import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticFeeds
 import it.dtk.model.Feed
@@ -21,7 +21,7 @@ import org.json4s.jackson.Serialization._
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.language.implicitConversions
 
 /**
@@ -62,7 +62,8 @@ class FeedsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system
     }.runWith(Sink.foreach { future =>
       future.foreach { value =>
 
-        inlufxDB.write("FeedsToKafka",
+        inlufxDB.write(
+          "FeedsToKafka",
           Map("written" -> value),
           Map()
         )

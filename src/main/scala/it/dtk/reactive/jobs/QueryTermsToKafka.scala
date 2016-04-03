@@ -54,7 +54,7 @@ class QueryTermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val s
 
   val client = new ElasticQueryTerms(esHosts, termsDocPath, clusterName).client
 
-  val inlufxDB = new InfluxDBWrapper(config)
+  val influxDB = new InfluxDBWrapper(config)
 
   def run(): Unit = {
     queryTermSource.to(kafkaSink()).run()
@@ -66,7 +66,7 @@ class QueryTermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val s
       }.runWith(Sink.foreach { d =>
         println(s" ${d} extracted query terms")
 
-        inlufxDB.write(
+        influxDB.write(
           "TermsToKafka",
           Map("extracted" -> d.getMillis),
           Map()
