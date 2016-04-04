@@ -65,7 +65,8 @@ class FeedsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system
         inlufxDB.write(
           "FeedsToKafka",
           Map("written" -> value),
-          Map())
+          Map()
+        )
       }
     })
   }
@@ -84,7 +85,8 @@ class FeedsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system
       kafka.publish(ProducerProperties(
         bootstrapServers = kafkaBrokers,
         topic = writeTopic,
-        valueSerializer = new ByteArraySerializer()))
+        valueSerializer = new ByteArraySerializer()
+      ))
 
     Sink.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._

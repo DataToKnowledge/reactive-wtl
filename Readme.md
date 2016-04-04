@@ -48,8 +48,9 @@ To init the index
 
 SERVICES: TermsToKafka, FeedsToKafka, ProcessTerms, ProcessFeeds, TagArticles, ToElastic, InitIndex
 
-1. run 1 instance of the docker `docker run -dt --name terms2kafka data2knowledge/reactive-wtl:1.2.0 -e docker -j TermsToKafka`
-2. run the docker `docker run -dt --name ProcessTerms data2knowledge/reactive-wtl:1.1.1 -e docker -j ProcessTerms` ran 3 instances
+1. run 1 instance of the docker `docker run -dt --name TermsToKafka data2knowledge/reactive-wtl:1.2.0 -e docker -j TermsToKafka`
+2. run the docker `docker run -dt --name ProcessTerms data2knowledge/reactive-wtl:1.2.0 -e docker -j ProcessTerms` ran 3 instances
 3. run 1 instance of the docker `docker run -dt --name FeedsToKafka data2knowledge/reactive-wtl:1.2.0 -e docker -j FeedsToKafka`
 4. run the docker `docker run -dt --name ProcessFeeds data2knowledge/reactive-wtl:1.2.0 -e docker -j ProcessFeeds` ran 3 instances
-4. run the docker `docker run -dt --name TagArticles data2knowledge/reactive-wtl:1.2.0 -e docker -j TagArticles` ran 3 instances
+5. run the docker `docker run -dt --name TagArticles data2knowledge/reactive-wtl:1.2.0 -e docker -j TagArticles` ran 3 instances
+6. run the docker `docker run -dt --name ToElastic data2knowledge/reactive-wtl:1.2.0 -e docker -j ToElastic` ran 2 instances

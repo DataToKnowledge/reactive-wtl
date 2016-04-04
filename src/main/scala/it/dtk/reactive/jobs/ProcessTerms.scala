@@ -48,7 +48,8 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
     kafka.publish(ProducerProperties(
       bootstrapServers = kafkaBrokers,
       topic = writeTopic,
-      valueSerializer = new ByteArraySerializer()))
+      valueSerializer = new ByteArraySerializer()
+    ))
 
   val client = new ElasticFeeds(esHosts, feedsIndexPath, clusterName).client
 
@@ -85,7 +86,8 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
         inlufxDB.write(
           "ProcessTerms",
           Map("url" -> a.uri, "main_content" -> a.cleanedText.nonEmpty),
-          Map("publisher" -> a.publisher))
+          Map("publisher" -> a.publisher)
+        )
         a
       }
 
@@ -123,7 +125,8 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
       bootstrapServers = kafkaBrokers,
       topic = readTopic,
       groupId = consumerGroup,
-      valueDeserializer = new StringDeserializer()))
+      valueDeserializer = new StringDeserializer()
+    ))
 
     Source.fromPublisher(publisher)
       .map(rec => parse(rec.value()).extract[QueryTerm])

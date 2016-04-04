@@ -5,11 +5,11 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, SinkShape}
+import akka.stream.{ ActorMaterializer, SinkShape }
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
+import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
@@ -27,12 +27,12 @@ import org.json4s.jackson.Serialization._
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.duration._
-import scala.language.{implicitConversions, postfixOps}
-import scala.util.{Failure, Success}
+import scala.language.{ implicitConversions, postfixOps }
+import scala.util.{ Failure, Success }
 
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
+ * Created by fabiofumarola on 08/03/16.
+ */
 class TermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -66,19 +66,20 @@ class TermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system
         queryTermSource().to(kafkaSink()).run()
         queryTermSource().map(_ => 1).toMat(Sink.reduce[Int](_ + _))(Keep.right).run()
       }.runWith(Sink.foreach { futCount =>
-      futCount.onComplete {
-        case Success(count) =>
-          println(s"extracted  ${count} query terms")
+        futCount.onComplete {
+          case Success(count) =>
+            println(s"extracted  ${count} query terms")
 
-          influxDB.write(
-            "TermsToKafka",
-            Map("extracted" -> count),
-            Map())
+            influxDB.write(
+              "TermsToKafka",
+              Map("extracted" -> count),
+              Map()
+            )
 
-        case Failure(ex) =>
-          ex.printStackTrace()
-      }
-    })
+          case Failure(ex) =>
+            ex.printStackTrace()
+        }
+      })
   }
 
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
@@ -101,7 +102,8 @@ class TermsToKafka(configFile: String, kafka: ReactiveKafka)(implicit val system
       kafka.publish(ProducerProperties(
         bootstrapServers = kafkaBrokers,
         topic = topic,
-        valueSerializer = new ByteArraySerializer()))
+        valueSerializer = new ByteArraySerializer()
+      ))
 
     Sink.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
