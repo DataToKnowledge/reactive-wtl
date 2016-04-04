@@ -4,6 +4,8 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Flow, Sink, Source, _}
 import akka.stream.{ThrottleMode, Attributes, ActorMaterializer, ClosedShape}
+import com.sksamuel.elastic4s.streams.ScrollPublisher
+import com.sksamuel.elastic4s.{RichSearchHit, HitAs}
 import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticFeeds
@@ -20,7 +22,10 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import org.reactivestreams.Subscriber
 import redis.clients.jedis.Jedis
+import scala.collection.mutable
 import scala.concurrent.duration._
+import com.sksamuel.elastic4s.streams.ReactiveElastic._
+import scala.util.control.Breaks._
 
 import scala.language.implicitConversions
 
@@ -38,6 +43,10 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
   val feedsIndexPath = config.as[String]("elastic.docs.feeds")
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
 
+  val termsDocPath = config.as[String]("elastic.docs.query_terms")
+  //scheduler params
+  val interval = config.as[FiniteDuration]("schedulers.queryTerms.each")
+
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
   val readTopic = config.as[String]("kafka.topics.query_terms")
@@ -53,7 +62,7 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
 
   val client = new ElasticFeeds(esHosts, feedsIndexPath, clusterName).client
 
-  val inlufxDB = new InfluxDBWrapper(config)
+  val influxDB = new InfluxDBWrapper(config)
 
   val redisHost = config.as[String]("redis.host")
   val redisDB = config.as[Int]("redis.db")
@@ -62,22 +71,28 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
 
   def run(): Unit = {
 
-    val articles = queryTermSource()
-      .throttle(1, 150.second, 100, ThrottleMode.Shaping)
-      .flatMapConcat { qt =>
+    case object Tick
 
+    val articles = Source.tick(10.second, interval, Tick)
+      .flatMapConcat(_ => queryTermSourceEs())
+      .flatMapConcat { qt =>
+        Thread.sleep(10000)
         val urls = terms.generateUrls(qt.terms, qt.lang, hostname)
 
-        val articles = (for {
-          url <- urls
-          data = terms.getResultsAsArticles(url)
-          if data.nonEmpty
-        } yield data).flatten
+        var results = List.empty[Article]
+        var extracted = true
 
-        if (articles.isEmpty)
-          println(s"Does not extract data for query terms ${qt.terms}")
+        for (url <- urls; if extracted) {
+          val data = terms.getResultsAsArticles(url)
+          extracted = data.nonEmpty
+          if (!extracted) {
+            println(s"Does not extract data for query terms ${qt.terms} and url $url")
+            Thread.sleep(10000)
+          }
 
-        articles
+          results ++= data
+        }
+        results
       }.filterNot(a => duplicatedUrl(a.uri))
       .map(gander.mainContent)
 
@@ -90,7 +105,7 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
       val printArticle = Flow[Article].map { a =>
         println(s"Processed article ${a.uri} from Query Terms")
 
-        inlufxDB.write(
+        influxDB.write(
           "ProcessTerms",
           Map("url" -> a.uri, "main_content" -> a.cleanedText.nonEmpty),
           Map("publisher" -> a.publisher)
@@ -127,16 +142,16 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
           Feed(url, newsPublisher, List.empty, Some(DateTime.now()))))
     }
 
-  def queryTermSource(): Source[QueryTerm, NotUsed] = {
-    val publisher = kafka.consume(ConsumerProperties(
-      bootstrapServers = kafkaBrokers,
-      topic = readTopic,
-      groupId = consumerGroup,
-      valueDeserializer = new StringDeserializer()
-    ))
+  def queryTermSourceEs(): Source[QueryTerm, NotUsed] = {
+    implicit object QueryTermsHitAs extends HitAs[QueryTerm] {
+      override def as(hit: RichSearchHit): QueryTerm = {
+        parse(hit.getSourceAsString).extract[QueryTerm]
+      }
+    }
 
+    val publisher: ScrollPublisher = client.publisher(termsDocPath, keepAlive = "180m")
     Source.fromPublisher(publisher)
-      .map(rec => parse(rec.value()).extract[QueryTerm])
+      .map(res => res.as[QueryTerm])
   }
 
   def extractArticles(hostname: String) = Flow[QueryTerm]
