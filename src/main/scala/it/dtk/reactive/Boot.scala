@@ -1,13 +1,14 @@
 package it.dtk.reactive
 
 import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer, Supervision }
+import akka.stream.{ActorMaterializerSettings, ActorMaterializer, Supervision}
 import com.softwaremill.react.kafka.ReactiveKafka
 import it.dtk.reactive.jobs._
 import org.rogach.scallop._
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val jobs = List("TermsToKafka", "FeedsToKafka", "ProcessTerms", "ProcessFeeds", "TagArticles", "ToElastic", "InitIndex")
+  val jobs = List("TermsToKafka", "FeedsToKafka", "ProcessTerms",
+    "ProcessFeeds", "TagArticles", "ToElastic", "InitIndex", "FeedsFromArticles")
   val envs = List("mac", "linux", "docker")
 
   val jobName = opt[String](descr = s"name of the job to run in $jobs", required = true)
@@ -25,8 +26,8 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
 }
 
 /**
- * Created by fabiofumarola on 15/03/16.
- */
+  * Created by fabiofumarola on 15/03/16.
+  */
 object Boot {
 
   def main(args: Array[String]) {
@@ -53,6 +54,7 @@ object Boot {
       case Some("TagArticles") => new TagArticles(configFile, kafka).run()
       case Some("ToElastic") => new ArticlesToElastic(configFile, kafka).run()
       case Some("InitIndex") => new InitIndex(configFile).run()
+      case Some("FeedsFromArticles") => new FeedsFromArticles(configFile, kafka).run()
       case _ =>
         conf.printHelp()
         System.exit(1)

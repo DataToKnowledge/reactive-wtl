@@ -115,7 +115,7 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
     .filterNot(_._2.contains("comment"))
     .flatMapConcat {
       case (newsPublisher, url) =>
-        val rss = html.findRss(url)
+        val rss = html.findMapRssTitle(url).keySet
         Source(rss.filterNot(_.contains("comment")).map(url =>
           Feed(url, newsPublisher, List.empty, Some(DateTime.now()))))
     }
