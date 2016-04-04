@@ -8,7 +8,7 @@ import org.rogach.scallop._
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val jobs = List("TermsToKafka", "FeedsToKafka", "ProcessTerms",
-    "ProcessFeeds", "TagArticles", "ToElastic", "InitIndex", "FeedsFromArticles")
+    "ProcessFeeds", "TagArticles", "ToElastic", "InitIndex", "FeedsFromItems")
   val envs = List("mac", "linux", "docker")
 
   val jobName = opt[String](descr = s"name of the job to run in $jobs", required = true)
@@ -54,7 +54,7 @@ object Boot {
       case Some("TagArticles") => new TagArticles(configFile, kafka).run()
       case Some("ToElastic") => new ArticlesToElastic(configFile, kafka).run()
       case Some("InitIndex") => new InitIndex(configFile).run()
-      case Some("FeedsFromArticles") => new FeedsFromArticles(configFile, kafka).run()
+      case Some("FeedsFromItems") => new FeedsFromItems(configFile, kafka).run()
       case _ =>
         conf.printHelp()
         System.exit(1)

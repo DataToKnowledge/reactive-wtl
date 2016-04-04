@@ -2,9 +2,9 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{ Flow, Sink, Source, _ }
-import akka.stream.{ ThrottleMode, Attributes, ActorMaterializer, ClosedShape }
-import com.softwaremill.react.kafka.{ ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka }
+import akka.stream.scaladsl.{Flow, Sink, Source, _}
+import akka.stream.{ThrottleMode, Attributes, ActorMaterializer, ClosedShape}
+import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticFeeds
 import it.dtk.model._
@@ -12,7 +12,7 @@ import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.helpers._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
-import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringDeserializer }
+import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer}
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -25,8 +25,8 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 08/03/16.
- */
+  * Created by fabiofumarola on 08/03/16.
+  */
 class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -63,14 +63,21 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
   def run(): Unit = {
 
     val articles = queryTermSource()
-      .flatMapConcat(q => terms.generateUrls(q.terms, q.lang, hostname))
-      .throttle(1, 1.second, 200, ThrottleMode.Shaping)
-      .flatMapConcat { u =>
-        val data = terms.getResultsAsArticles(u)
-        if (data.isEmpty)
-          println(s"Does not extract data from $u")
+      .throttle(1, 150.second, 100, ThrottleMode.Shaping)
+      .flatMapConcat { qt =>
 
-        data
+        val urls = terms.generateUrls(qt.terms, qt.lang, hostname)
+
+        val articles = (for {
+          url <- urls
+          data = terms.getResultsAsArticles(url)
+          if data.nonEmpty
+        } yield data).flatten
+
+        if (articles.isEmpty)
+          println(s"Does not extract data for query terms ${qt.terms}")
+
+        articles
       }.filterNot(a => duplicatedUrl(a.uri))
       .map(gander.mainContent)
 

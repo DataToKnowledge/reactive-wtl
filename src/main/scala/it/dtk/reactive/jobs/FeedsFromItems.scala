@@ -20,9 +20,9 @@ import org.joda.time.DateTime
 /**
   * Created by fabiofumarola on 04/04/16.
   */
-class FeedsFromArticles(configFile: String, kafka: ReactiveKafka)(implicit
-                                                                  val system: ActorSystem,
-                                                                  implicit val mat: ActorMaterializer) {
+class FeedsFromItems(configFile: String, kafka: ReactiveKafka)(implicit
+                                                               val system: ActorSystem,
+                                                               implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -35,7 +35,7 @@ class FeedsFromArticles(configFile: String, kafka: ReactiveKafka)(implicit
 
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
-  val consumerGroup = config.as[String]("kafka.groups.feed_from_articles")
+  val consumerGroup = config.as[String]("kafka.groups.feed_from_items")
   val readTopic = config.as[String]("kafka.topics.feed_items")
 
   val influxDB = new InfluxDBWrapper(config)
