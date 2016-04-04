@@ -1,24 +1,19 @@
 package it.dtk.reactive.jobs
 
-import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ ActorMaterializer, SinkShape }
+import akka.stream.{ActorMaterializer, SinkShape}
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
+import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.ByteArraySerializer
-import org.influxdb.InfluxDBFactory
-import org.influxdb.dto._
-import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
@@ -27,8 +22,8 @@ import org.json4s.jackson.Serialization._
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.duration._
-import scala.language.{ implicitConversions, postfixOps }
-import scala.util.{ Failure, Success }
+import scala.language.{implicitConversions, postfixOps}
+import scala.util.{Failure, Success}
 
 /**
  * Created by fabiofumarola on 08/03/16.
