@@ -3,10 +3,11 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Flow, Sink, Source, _}
-import akka.stream.{ThrottleMode, Attributes, ActorMaterializer, ClosedShape}
+import akka.stream.{ActorMaterializer, ClosedShape}
+import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.sksamuel.elastic4s.{RichSearchHit, HitAs}
-import com.softwaremill.react.kafka.{ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka}
+import com.sksamuel.elastic4s.{HitAs, RichSearchHit}
+import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticFeeds
 import it.dtk.model._
@@ -14,7 +15,7 @@ import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.helpers._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringDeserializer}
+import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
@@ -22,11 +23,8 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import org.reactivestreams.Subscriber
 import redis.clients.jedis.Jedis
-import scala.collection.mutable
-import scala.concurrent.duration._
-import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import scala.util.control.Breaks._
 
+import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 /**
@@ -74,10 +72,10 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
     case object Tick
 
     val articles = Source.tick(10.second, interval, Tick)
-      .flatMapConcat(_ => queryTermSourceEs())
+      .flatMapConcat(_ => queryTermSource())
       .flatMapConcat { qt =>
         Thread.sleep(10000)
-        val urls = terms.generateUrls(qt.terms, qt.lang, hostname)
+        val urls = Seq(terms.generateUrl(qt.terms, qt.lang, hostname))
 
         var results = List.empty[Article]
         var extracted = true
@@ -142,7 +140,7 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
           Feed(url, newsPublisher, List.empty, Some(DateTime.now()))))
     }
 
-  def queryTermSourceEs(): Source[QueryTerm, NotUsed] = {
+  def queryTermSource(): Source[QueryTerm, NotUsed] = {
     implicit object QueryTermsHitAs extends HitAs[QueryTerm] {
       override def as(hit: RichSearchHit): QueryTerm = {
         parse(hit.getSourceAsString).extract[QueryTerm]

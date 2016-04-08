@@ -3,30 +3,35 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ ThrottleMode, ActorMaterializer, ClosedShape }
-import com.softwaremill.react.kafka.{ ConsumerProperties, ProducerMessage, ProducerProperties, ReactiveKafka }
+import akka.stream.{ActorMaterializer, ClosedShape, ThrottleMode}
+import com.sksamuel.elastic4s.streams.ReactiveElastic._
+import com.sksamuel.elastic4s.streams.ScrollPublisher
+import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
-import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{ Feed, SchedulerData }
+import it.dtk.es.ElasticFeeds
+import it.dtk.model.{Feed, SchedulerData}
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
-import org.apache.kafka.common.serialization.{ ByteArraySerializer, StringDeserializer }
+import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.joda.time.DateTime
+import org.json4s.NoTypeHints
+import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.Serialization
 import org.reactivestreams.Subscriber
 import redis.clients.jedis.Jedis
-import redis.clients.util.SafeEncoder
 
-import scala.language.implicitConversions
 import scala.concurrent.duration._
+import scala.language.implicitConversions
+
 /**
- * Created by fabiofumarola on 09/03/16.
- */
+  * Created by fabiofumarola on 09/03/16.
+  */
 class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                                             val system: ActorSystem,
+                                                             implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -37,9 +42,10 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
   val parallel = config.as[Int]("elastic.feeds.parallel")
 
+  val interval = config.as[FiniteDuration]("schedulers.feeds.each")
+
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
-  val readTopic = config.as[String]("kafka.topics.feeds")
   val consumerGroup = config.as[String]("kafka.groups.feed_group")
   val writeTopic = config.as[String]("kafka.topics.feed_items")
 
@@ -50,9 +56,9 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
       valueSerializer = new ByteArraySerializer()
     ))
 
-  val client = new ElasticQueryTerms(esHosts, feedsDocPath, clusterName).client
+  val client = new ElasticFeeds(esHosts, feedsDocPath, clusterName).client
 
-  val inlufxDB = new InfluxDBWrapper(config)
+  val influxDB = new InfluxDBWrapper(config)
 
   val redisHost = config.as[String]("redis.host")
   val redisDB = config.as[Int]("redis.db")
@@ -60,11 +66,15 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
   jedis.select(redisDB)
 
   def run(): Unit = {
-    val feedArticles = feedSource().
-      via(extractArticles())
+
+    case object Tick
+
+    val feedArticles = Source.tick(10.second, interval, Tick)
+      .flatMapConcat(_ => feedSource())
+      .via(extractArticles())
       .map { fa =>
         println(s"processed feed ${fa._1.url} articles extracted ${fa._2.size}")
-        inlufxDB.write(
+        influxDB.write(
           "ProcessFeeds",
           Map("url" -> fa._1.url, "articles" -> fa._2.size), Map()
         )
@@ -104,17 +114,26 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
     .map(gander.mainContent)
     .map(a => ProducerMessage(a.uri.getBytes, a.toByteArray()))
 
+//  def feedSource(): Source[Feed, NotUsed] = {
+//    val publisher = kafka.consume(ConsumerProperties(
+//      bootstrapServers = kafkaBrokers,
+//      topic = readTopic,
+//      groupId = consumerGroup,
+//      valueDeserializer = new StringDeserializer()
+//    ))
+//
+//    Source.fromPublisher(publisher)
+//      .map(rec => parse(rec.value()).extract[Feed])
+//      .filter(_.schedulerData.time.isBeforeNow)
+//  }
+
   def feedSource(): Source[Feed, NotUsed] = {
-    val publisher = kafka.consume(ConsumerProperties(
-      bootstrapServers = kafkaBrokers,
-      topic = readTopic,
-      groupId = consumerGroup,
-      valueDeserializer = new StringDeserializer()
-    ))
+    implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
+
+    val publisher: ScrollPublisher = client.publisher(feedsDocPath, keepAlive = "60m")
 
     Source.fromPublisher(publisher)
-      .map(rec => parse(rec.value()).extract[Feed])
-      .filter(_.schedulerData.time.isBeforeNow)
+      .map(hit => parse(hit.getSourceAsString).extract[Feed])
   }
 
   def extractArticles(): Flow[Feed, (Feed, List[Article]), NotUsed] =
