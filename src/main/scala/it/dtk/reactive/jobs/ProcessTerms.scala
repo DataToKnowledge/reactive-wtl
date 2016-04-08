@@ -47,7 +47,6 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
 
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
-  val readTopic = config.as[String]("kafka.topics.query_terms")
   val consumerGroup = config.as[String]("kafka.groups.query_terms_group")
   val writeTopic = config.as[String]("kafka.topics.feed_items")
 
