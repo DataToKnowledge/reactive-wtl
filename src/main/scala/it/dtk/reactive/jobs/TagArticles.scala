@@ -13,6 +13,7 @@ import it.dtk.reactive.jobs.helpers._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
+import redis.clients.jedis.Jedis
 
 import scala.concurrent.duration._
 import scala.language.{ implicitConversions, postfixOps }
@@ -44,10 +45,17 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
   implicit val dbpedia = new DBpediaSpotLight(dbPediaBaseUrl, lang)
   val locExtractor = new FocusLocation(esHosts, locationsDocPath, clusterName)
 
-  val inlufxDB = new InfluxDBWrapper(config)
+  //redis params
+  val redisHost = config.as[String]("redis.host")
+  val redisDB = config.as[Int]("tagArticles.redis.db")
+  val jedis = new Jedis(redisHost)
+  jedis.select(redisDB)
+
+  val influxDB = new InfluxDBWrapper(config)
 
   def run() {
     val taggedArticles = feedItemsSource()
+      .filterNot(a => duplicatedUrl(a.uri))
       .groupedWithin(50, 20 seconds)
       .flatMapConcat(s => Source(s.toSet))
       .map(annotateArticle)
@@ -62,7 +70,7 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
     }.map { a =>
       println(s"extracted annotations and focus location for article ${a.uri}")
 
-      inlufxDB.write(
+      influxDB.write(
         "TagArticles",
         Map("url" -> a.uri, "annotations" -> a.annotations.size, "location" -> a.focusLocation.isDefined),
         Map("publisher" -> a.publisher)
@@ -75,6 +83,15 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
     system.registerOnTermination({
       dbpedia.close()
     })
+  }
+
+  def duplicatedUrl(uri: String): Boolean = {
+    val found = Option(jedis.get(uri))
+
+    if (found.isEmpty) jedis.set(uri, "1")
+    else jedis.incr(uri)
+
+    found.isDefined
   }
 
   def feedItemsSource(): Source[Article, NotUsed] = {
