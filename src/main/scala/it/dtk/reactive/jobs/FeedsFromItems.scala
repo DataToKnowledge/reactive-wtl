@@ -67,6 +67,7 @@ class FeedsFromItems(configFile: String, kafka: ReactiveKafka)(implicit
           val publisher = if (title.isEmpty) host else title
           Feed(rss, publisher, List.empty, Some(DateTime.now()))
       })
+        .filterNot(_.publisher.toLowerCase.contains("calcio"))
     }
 
   def feedItemsSource(): Source[Article, NotUsed] = {
