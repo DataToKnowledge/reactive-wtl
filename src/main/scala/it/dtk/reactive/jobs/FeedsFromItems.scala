@@ -64,8 +64,8 @@ class FeedsFromItems(configFile: String, kafka: ReactiveKafka)(implicit
       val host = new URL(url).getHost
       Source(mapRssTitle.filterNot(_._1.contains("comment")).map {
         case (rss, title) =>
-          val publisher = if (title.isEmpty) host else title
-          Feed(rss, publisher, List.empty, Some(DateTime.now()))
+//          val publisher = if (title.isEmpty) host else title
+          Feed(rss, rss, List.empty, Some(DateTime.now()))
       })
     }
 
