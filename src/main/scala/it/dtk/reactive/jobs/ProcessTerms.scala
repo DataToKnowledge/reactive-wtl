@@ -28,6 +28,7 @@ import redis.clients.jedis.Jedis
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
+import scala.util.Random
 
 /**
   * Created by fabiofumarola on 08/03/16.
@@ -76,7 +77,7 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
       .flatMapConcat(_ => queryTermSource())
       .take(90)
       .map { qt =>
-        //        Thread.sleep(10000)
+        Thread.sleep(Random.nextInt(5000))
         val urls = Seq(terms.generateUrl(qt.terms, qt.lang, hostname))
 
         var results = List.empty[Article]

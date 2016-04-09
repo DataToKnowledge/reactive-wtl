@@ -53,7 +53,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
 
     var counter = 1
 
-    val mappedArticles = articles
+    articles
       .map { a =>
         val n = News(
           uri = a.uri,
@@ -67,7 +67,8 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
           lang = a.lang,
           text = a.cleanedText,
           annotations = convertAnnotations(a.annotations),
-          focusLocation = a.focusLocation
+          focusLocation = a.focusLocation,
+          pin = a.focusLocation.map(_.pin)
         )
 
         n
