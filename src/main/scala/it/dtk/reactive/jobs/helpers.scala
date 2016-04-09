@@ -7,8 +7,8 @@ import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
 import com.sksamuel.elastic4s._
-import com.softwaremill.react.kafka.{ ProducerMessage, ProducerProperties, ReactiveKafka }
-import it.dtk.{ GanderHelper, _ }
+import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
+import it.dtk.{GanderHelper, _}
 import it.dtk.model._
 import it.dtk.protobuf._
 import org.apache.kafka.common.serialization.ByteArraySerializer
@@ -22,8 +22,8 @@ import ElasticDsl._
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 08/03/16.
- */
+  * Created by fabiofumarola on 08/03/16.
+  */
 object helpers {
   val web = HttpDownloader
   val feedExtr = RomeFeedHelper
@@ -52,7 +52,7 @@ object helpers {
   }
 
   def saveToElastic(feeds: Source[Feed, NotUsed], client: ElasticClient, indexPath: String,
-    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): RunnableGraph[NotUsed] = {
+                    batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): RunnableGraph[NotUsed] = {
     implicit val builder = new RequestBuilder[Feed] {
       // the request returned doesn't have to be an index - it can be anything supported by the bulk api
       def request(t: Feed): BulkCompatibleDefinition =
@@ -72,7 +72,6 @@ object helpers {
 
   def elasticFeedSink(client: ElasticClient, indexPath: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem): Sink[Feed, NotUsed] = {
     implicit val builder = new RequestBuilder[Feed] {
-      // the request returned doesn't have to be an index - it can be anything supported by the bulk api
       def request(t: Feed): BulkCompatibleDefinition =
         index into indexPath id t.publisher source write(t)
     }
@@ -80,27 +79,27 @@ object helpers {
     val elasticSink = client.subscriber[Feed](
       batchSize = batchSize,
       concurrentRequests = concurrentRequests,
-      completionFn = () => println("all done")
+      completionFn = () => println("save all the news feeds")
     )
 
     Sink.fromSubscriber(elasticSink)
   }
 
-  //  def saveToElastic(terms: Source[QueryTerm, NotUsed], client: ElasticClient, indexPath: String,
-  //                    batchSize: Int, concurrentRequests: Int)
-  //                   (implicit system: ActorSystem, materializer: ActorMaterializer): RunnableGraph[NotUsed] = {
-  //
-  //    implicit val builder = new RequestBuilder[QueryTerm] {
-  //      def request(t: QueryTerm): BulkCompatibleDefinition =
-  //        index into indexPath id t.terms.mkString("_") source write(t)
-  //    }
-  //
-  //    val elasticSink = client.subscriber[QueryTerm](
-  //      batchSize = batchSize,
-  //      concurrentRequests = concurrentRequests,
-  //      completionFn = () => println("all done")
-  //    )
-  //
-  //    terms.to(Sink.fromSubscriber(elasticSink))
-  //  }
+  def elasticQueryTermSink(client: ElasticClient, indexPath: String, batchSize: Int, concurrentRequests: Int)
+                   (implicit system: ActorSystem): Sink[QueryTerm, NotUsed] = {
+
+    implicit val builder = new RequestBuilder[QueryTerm] {
+      def request(t: QueryTerm): BulkCompatibleDefinition =
+        index into indexPath id t.terms.mkString("_") source write(t)
+    }
+
+    val elasticSink = client.subscriber[QueryTerm](
+      batchSize = batchSize,
+      concurrentRequests = concurrentRequests,
+      completionFn = () => println("saved all the query terms updates")
+    )
+
+    Sink.fromSubscriber(elasticSink)
+  }
+
 }
