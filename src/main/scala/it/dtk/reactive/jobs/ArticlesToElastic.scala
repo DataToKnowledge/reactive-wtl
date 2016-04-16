@@ -11,7 +11,7 @@ import com.sksamuel.elastic4s.streams.RequestBuilder
 import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{ SemanticTag, News }
+import it.dtk.model.{ SemanticTag, FlattenedNews }
 import it.dtk.protobuf._
 import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
@@ -25,9 +25,8 @@ import org.json4s.jackson.Serialization._
 /**
  * Created by fabiofumarola on 10/03/16.
  */
-class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem,
+                                                                  implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -55,7 +54,9 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
 
     articles
       .map { a =>
-        val n = News(
+        val annotations = convertAnnotations(a.annotations)
+
+        val n = FlattenedNews(
           uri = a.uri,
           title = a.title,
           description = a.description,
@@ -66,20 +67,25 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
           date = new DateTime(a.date),
           lang = a.lang,
           text = a.cleanedText,
-          annotations = convertAnnotations(a.annotations),
-          focusLocation = a.focusLocation,
-          pin = a.focusLocation.map(_.pin)
-        )
-
+          cityName = a.focusLocation.map(_.cityName).getOrElse(""),
+          provinceName = a.focusLocation.map(_.provinceName).getOrElse(""),
+          regionName = a.focusLocation.map(_.provinceName).getOrElse(""),
+          annotations = annotations,
+          crimes = filterCrimes(annotations),
+          locations = filterLocations(annotations),
+          persons = Seq(),
+          semanticNames = annotations.map(_.name).distinct,
+          semanticTags = annotations.
+            flatMap(_.tags.map(_.replace("_", " "))).distinct,
+          pin = a.focusLocation.map(_.pin))
         n
       }.map { n =>
-        println(s" $counter savig news ${n.uri}")
+        println(s" $counter saving news ${n.uri}")
 
         inlufxDB.write(
           "ToElastic",
           Map("url" -> n.uri, "count" -> counter),
-          Map()
-        )
+          Map())
         counter += 1
         n
       }
@@ -94,9 +100,23 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
           wikipediaUrl = list.head.wikipediaUrl,
           tags = list.flatMap(_.types).map(_.value).toSet,
           pin = list.head.pin,
-          support = list.map(_.support).sum / list.length
-        )
+          support = list.map(_.support).sum / list.length)
     }.toSeq
+  }
+
+  def filterCrimes(list: Seq[SemanticTag]): Seq[String] = {
+    list.filter(_.tags.contains("Crime"))
+      .map(_.name)
+  }
+
+  def filterLocations(list: Seq[SemanticTag]): Seq[String] = {
+    list.filter(_.tags.contains("PopulatedPlace"))
+      .map(_.name)
+  }
+
+  def filterPerson(list: Seq[SemanticTag]): Seq[String] = {
+    list.filter(_.tags.contains("NaturalPerson"))
+      .map(_.name)
   }
 
   def articleSource(): Source[Article, NotUsed] = {
@@ -105,27 +125,25 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit
       bootstrapServers = kafkaBrokers,
       topic = readTopic,
       groupId = groupId,
-      valueDeserializer = new ByteArrayDeserializer()
-    ))
+      valueDeserializer = new ByteArrayDeserializer()))
 
     Source.fromPublisher(publisher)
       .map(rec => Article.parseFrom(rec.value()))
   }
 
-  def elasticSink(): Sink[News, NotUsed] = {
+  def elasticSink(): Sink[FlattenedNews, NotUsed] = {
     implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
 
-    implicit val builder = new RequestBuilder[News] {
-      override def request(n: News): BulkCompatibleDefinition =
+    implicit val builder = new RequestBuilder[FlattenedNews] {
+      override def request(n: FlattenedNews): BulkCompatibleDefinition =
         index into feedsIndexPath id n.uri source write(n)
     }
 
-    val elasticSink = client.subscriber[News](
+    val elasticSink = client.subscriber[FlattenedNews](
       batchSize = batchSize,
       concurrentRequests = parallel,
       completionFn = () => println("all done"),
-      errorFn = (ex: Throwable) => println(ex.getLocalizedMessage)
-    )
+      errorFn = (ex: Throwable) => println(ex.getLocalizedMessage))
     Sink.fromSubscriber(elasticSink)
   }
 
