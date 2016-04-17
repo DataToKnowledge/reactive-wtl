@@ -1,5 +1,7 @@
 package it.dtk.reactive.jobs
 
+import java.net.URL
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -21,6 +23,8 @@ import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization._
+
+import scala.util.Try
 
 /**
  * Created by fabiofumarola on 10/03/16.
@@ -63,7 +67,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
           categories = a.categories.filter(_.length > 2),
           keywords = a.keywords.filter(_.length > 2),
           imageUrl = a.imageUrl,
-          publisher = a.publisher,
+          publisher = cleanPublisher(a.publisher),
           date = new DateTime(a.date),
           lang = a.lang,
           text = a.cleanedText,
@@ -92,16 +96,43 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
       .to(elasticSink()).run()
   }
 
+  def cleanPublisher(publisher: String): String = {
+    publisher match {
+      case value if value.startsWith("http") =>
+        Try(new URL(publisher).getHost).getOrElse(value)
+
+      case value => value
+    }
+  }
+
+  val tagRegex = "^Q\\d*".r
+
+  /**
+   *
+   * @param annotations
+   * @return all the annotations where
+   *         1. tags with length > 2, and does not match with Q\d*
+   *         2. name with length > 2
+   */
   def convertAnnotations(annotations: Seq[Annotation]): Seq[SemanticTag] = {
     annotations.groupBy(_.surfaceForm.toLowerCase).map {
       case (name, list) =>
+
+        val cleanedTags = list.
+          flatMap(_.types).
+          map(_.value).
+          toSet.
+          filter(_.length > 2).
+          filter(t => tagRegex.findFirstIn(t).isEmpty)
+
         SemanticTag(
           name = name.capitalize,
           wikipediaUrl = list.head.wikipediaUrl,
-          tags = list.flatMap(_.types).map(_.value).toSet,
+          tags = cleanedTags,
           pin = list.head.pin,
           support = list.map(_.support).sum / list.length)
-    }.toSeq
+    }.filter(_.name.length > 2)
+      .toSeq
   }
 
   def filterCrimes(list: Seq[SemanticTag]): Seq[String] = {
@@ -146,5 +177,4 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
       errorFn = (ex: Throwable) => println(ex.getLocalizedMessage))
     Sink.fromSubscriber(elasticSink)
   }
-
 }
