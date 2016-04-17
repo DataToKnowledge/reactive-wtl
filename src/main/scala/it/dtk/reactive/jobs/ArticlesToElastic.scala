@@ -49,7 +49,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
   val groupId = config.as[String]("kafka.groups.articles_es")
 
   val client = new ElasticQueryTerms(esHosts, feedsIndexPath, clusterName).client
-  val inlufxDB = new InfluxDBWrapper(config)
+  val influxDB = new InfluxDBWrapper(config)
 
   def run() {
     val articles = articleSource()
@@ -73,7 +73,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
           text = a.cleanedText,
           cityName = a.focusLocation.map(_.cityName).getOrElse(""),
           provinceName = a.focusLocation.map(_.provinceName).getOrElse(""),
-          regionName = a.focusLocation.map(_.provinceName).getOrElse(""),
+          regionName = a.focusLocation.map(_.regionName).getOrElse(""),
           annotations = annotations,
           crimes = filterCrimes(annotations),
           locations = filterLocations(annotations),
@@ -86,7 +86,7 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
       }.map { n =>
         println(s" $counter saving news ${n.uri}")
 
-        inlufxDB.write(
+      influxDB.write(
           "ToElastic",
           Map("url" -> n.uri, "count" -> counter),
           Map())
