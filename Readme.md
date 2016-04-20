@@ -45,9 +45,5 @@ SERVICES: TermsToKafka, FeedsToKafka, ProcessTerms, ProcessFeeds, TagArticles, T
 1. run the docker `docker run -dt --name ProcessTerms data2knowledge/reactive-wtl:1.4.4 -e docker -j ProcessTerms` ran 3 instances
 2. run the docker `docker run -dt --name ProcessFeeds data2knowledge/reactive-wtl:1.4.4 -e docker -j ProcessFeeds` ran 3 instances
 3. run the docker `docker run -dt --name TagArticles data2knowledge/reactive-wtl:1.4.4 -e docker -j TagArticles` ran 4 instances
-To News1
 4. run the docker `docker run -dt --name ToElastic data2knowledge/reactive-wtl:1.4.4 -e docker -j ToElastic` ran 2 instances
-To News
-4. run the docker `docker run -dt --name ToElastic data2knowledge/reactive-wtl:1.4.3 -e docker -j ToElastic` ran 2 instances
-
 5. run the docker `docker run -dt --name FeedFromItems data2knowledge/reactive-wtl:1.4.4 -e docker -j FeedsFromItems` ran 1 instance
