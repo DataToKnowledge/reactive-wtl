@@ -58,8 +58,6 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
 
   val client = new ElasticFeeds(esHosts, feedsDocPath, clusterName).client
 
-  val influxDB = new InfluxDBWrapper(config)
-
   val redisHost = config.as[String]("redis.host")
   val redisDB = config.as[Int]("redis.db")
   val jedis = new Jedis(redisHost)
@@ -74,10 +72,6 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
       .via(extractArticles())
       .map { fa =>
         println(s"processed feed ${fa._1.url} articles extracted ${fa._2.size}")
-        influxDB.write(
-          "ProcessFeeds",
-          Map("url" -> fa._1.url, "articles" -> fa._2.size), Map()
-        )
         fa
       }
 

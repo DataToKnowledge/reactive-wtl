@@ -107,11 +107,6 @@ class ProcessTerms(configFile: String, kafka: ReactiveKafka)(implicit val system
       val bcast = b.add(Broadcast[(QueryTerm, List[Article])](3))
       val printArticle = Flow[Article].map { a =>
         println(s"Processed article ${a.uri} from Query Terms")
-        influxDB.write(
-          "ProcessTerms",
-          Map("url" -> a.uri, "main_content" -> a.cleanedText.nonEmpty),
-          Map("publisher" -> a.publisher)
-        )
         a
       }
 

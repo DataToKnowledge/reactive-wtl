@@ -23,7 +23,6 @@ lazy val root = (project in file("."))
       "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.0",
       "com.typesafe.akka" %% "akka-http-core" % "2.4.3",
       "org.rogach" %% "scallop" % "1.0.0",
-      "org.influxdb" % "influxdb-java" % "2.1",
       "redis.clients" % "jedis" % "2.8.1"
     )
   ) dependsOn algocore

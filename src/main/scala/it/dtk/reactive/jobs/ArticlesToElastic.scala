@@ -10,12 +10,11 @@ import com.sksamuel.elastic4s.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.RequestBuilder
-import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
+import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
-import it.dtk.model.{ SemanticTag, FlattenedNews }
+import it.dtk.model.{FlattenedNews, SemanticTag}
 import it.dtk.protobuf._
-import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.joda.time.DateTime
@@ -27,8 +26,8 @@ import org.json4s.jackson.Serialization._
 import scala.util.Try
 
 /**
- * Created by fabiofumarola on 10/03/16.
- */
+  * Created by fabiofumarola on 10/03/16.
+  */
 class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val system: ActorSystem,
                                                                   implicit val mat: ActorMaterializer) {
 
@@ -49,7 +48,6 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
   val groupId = config.as[String]("kafka.groups.articles_es")
 
   val client = new ElasticQueryTerms(esHosts, feedsIndexPath, clusterName).client
-  val influxDB = new InfluxDBWrapper(config)
 
   def run() {
     val articles = articleSource()
@@ -84,16 +82,10 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
           pin = a.focusLocation.map(_.pin))
         n
       }.map { n =>
-        println(s" $counter saving news ${n.uri}")
-
-      influxDB.write(
-          "ToElastic",
-          Map("url" -> n.uri, "count" -> counter),
-          Map())
-        counter += 1
-        n
-      }
-      .to(elasticSink()).run()
+      println(s" $counter saving news ${n.uri}")
+      counter +=1
+      n
+    }.to(elasticSink()).run()
   }
 
   def cleanPublisher(publisher: String): String = {
@@ -108,12 +100,12 @@ class ArticlesToElastic(configFile: String, kafka: ReactiveKafka)(implicit val s
   val tagRegex = "^Q\\d*".r
 
   /**
-   *
-   * @param annotations
-   * @return all the annotations where
-   *         1. tags with length > 2, and does not match with Q\d*
-   *         2. name with length > 2
-   */
+    *
+    * @param annotations
+    * @return all the annotations where
+    *         1. tags with length > 2, and does not match with Q\d*
+    *         2. name with length > 2
+    */
   def convertAnnotations(annotations: Seq[Annotation]): Seq[SemanticTag] = {
     annotations.groupBy(_.surfaceForm.toLowerCase).map {
       case (name, list) =>

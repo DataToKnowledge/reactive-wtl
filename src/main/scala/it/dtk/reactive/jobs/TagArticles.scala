@@ -69,12 +69,6 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
       a.copy(focusLocation = location)
     }.map { a =>
       println(s"extracted annotations and focus location for article ${a.uri}")
-
-      influxDB.write(
-        "TagArticles",
-        Map("url" -> a.uri, "annotations" -> a.annotations.size, "location" -> a.focusLocation.isDefined),
-        Map("publisher" -> a.publisher)
-      )
       a
     }
 
