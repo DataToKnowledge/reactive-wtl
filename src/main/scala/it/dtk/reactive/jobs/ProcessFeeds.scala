@@ -6,21 +6,17 @@ import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, ClosedShape, ThrottleMode}
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.softwaremill.react.kafka.{ProducerMessage, ProducerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
-import it.dtk.es.ElasticFeeds
+import it.dtk.es._
 import it.dtk.model.{Feed, SchedulerData}
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
-import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
-import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
-import org.reactivestreams.Subscriber
 import redis.clients.jedis.Jedis
 
 import scala.concurrent.duration._
@@ -29,9 +25,8 @@ import scala.language.implicitConversions
 /**
   * Created by fabiofumarola on 09/03/16.
   */
-class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
-                                                             val system: ActorSystem,
-                                                             implicit val mat: ActorMaterializer) {
+class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
+                                       implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -42,40 +37,33 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
   val parallel = config.as[Int]("elastic.feeds.parallel")
 
-  val interval = config.as[FiniteDuration]("schedulers.feeds.each")
+  val client = elasticClient(esHosts, clusterName)
 
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
   val consumerGroup = config.as[String]("kafka.groups.feed_group")
   val writeTopic = config.as[String]("kafka.topics.feed_items")
 
-  val kafkaSink: Subscriber[ProducerMessage[Array[Byte], Array[Byte]]] =
-    kafka.publish(ProducerProperties(
-      bootstrapServers = kafkaBrokers,
-      topic = writeTopic,
-      valueSerializer = new ByteArraySerializer()
-    ))
-
-  val client = new ElasticFeeds(esHosts, feedsDocPath, clusterName).client
-
+  //redis Params
   val redisHost = config.as[String]("redis.host")
   val redisDB = config.as[Int]("redis.db")
   val jedis = new Jedis(redisHost)
   jedis.select(redisDB)
 
+  val interval = config.as[FiniteDuration]("schedulers.feeds.each")
+
   def run(): Unit = {
+    val kafkaSink = kafka.articleSink(kafkaBrokers, writeTopic)
 
-    case object Tick
-
-    val feedArticles = Source.tick(10.second, interval, Tick)
-      .flatMapConcat(_ => feedSource())
+    val feedArticles = Source.tick(10.second, interval, 1)
+      .flatMapConcat(_ => elastic.feedSource(client, feedsDocPath))
       .via(extractArticles())
       .map { fa =>
         println(s"processed feed ${fa._1.url} articles extracted ${fa._2.size}")
         fa
       }
 
-    val feedsSink = elasticFeedSink(client, feedsDocPath, batchSize, parallel)
+    val feedsSink = elastic.feedSink(client, feedsDocPath, batchSize, parallel)
 
     val saveGraph = GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
@@ -85,7 +73,7 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
 
       feedArticles ~> unzip.in
       unzip.out0 ~> feedsSink
-      unzip.out1 ~> processArticles() ~> Sink.fromSubscriber(kafkaSink)
+      unzip.out1 ~> processArticles() ~> kafkaSink
       ClosedShape
     }
 
@@ -101,34 +89,14 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
     found.isDefined
   }
 
-  def processArticles(): Flow[List[Article], ProducerMessage[Array[Byte], Array[Byte]], NotUsed] = Flow[List[Article]]
-    .mapConcat(identity)
-    .filterNot(a => duplicatedUrl(a.uri))
-    .throttle(1, 1.second, 200, ThrottleMode.Shaping)
-    .map(gander.mainContent)
-    .map(a => ProducerMessage(a.uri.getBytes, a.toByteArray()))
+  def processArticles() =
+    Flow[List[Article]]
+      .mapConcat(identity)
+      .filterNot(a => duplicatedUrl(a.uri))
+      .throttle(1, 1.second, 200, ThrottleMode.Shaping)
+      .map(gander.mainContent)
+      .map(a => kafka.wrap(a))
 
-//  def feedSource(): Source[Feed, NotUsed] = {
-//    val publisher = kafka.consume(ConsumerProperties(
-//      bootstrapServers = kafkaBrokers,
-//      topic = readTopic,
-//      groupId = consumerGroup,
-//      valueDeserializer = new StringDeserializer()
-//    ))
-//
-//    Source.fromPublisher(publisher)
-//      .map(rec => parse(rec.value()).extract[Feed])
-//      .filter(_.schedulerData.time.isBeforeNow)
-//  }
-
-  def feedSource(): Source[Feed, NotUsed] = {
-    implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
-
-    val publisher: ScrollPublisher = client.publisher(feedsDocPath, keepAlive = "60m")
-
-    Source.fromPublisher(publisher)
-      .map(hit => parse(hit.getSourceAsString).extract[Feed])
-  }
 
   def extractArticles(): Flow[Feed, (Feed, List[Article]), NotUsed] =
     Flow[Feed].map { f =>
@@ -143,8 +111,7 @@ class ProcessFeeds(configFile: String, kafka: ReactiveKafka)(implicit
         lastTime = Option(DateTime.now),
         parsedUrls = parsedUrls.take(200),
         count = f.count + articles.size,
-        schedulerData = nextSchedule
-      )
+        schedulerData = nextSchedule)
       (fUpdated, articles)
     }
 }
