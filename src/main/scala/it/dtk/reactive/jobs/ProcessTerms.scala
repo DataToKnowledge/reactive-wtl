@@ -2,8 +2,8 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Flow, Source, _}
-import akka.stream.{ActorMaterializer, ClosedShape}
+import akka.stream.scaladsl.{ Flow, Source, _ }
+import akka.stream.{ ActorMaterializer, ClosedShape }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
@@ -18,8 +18,8 @@ import scala.language.implicitConversions
 import scala.util.Random
 
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
+ * Created by fabiofumarola on 08/03/16.
+ */
 class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   //  implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -53,7 +53,7 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
     val feedsSink = elastic.feedSink(client.client, feedsIndexPath, batchSize, 2)
     val queryTermSink = elastic.queryTermSink(client.client, termsIndexPath, batchSize, 2)
 
-    val termArticlesSource = Source.tick(10.second, 10.seconds, 1) //interval
+    val termArticlesSource = Source.tick(10.second, interval, 1)
       .flatMapConcat(_ => elastic.queryTermSource(client.client, client.queryTermsSortedDesc()))
       .take(50)
       .map { qt =>

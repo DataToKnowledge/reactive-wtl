@@ -2,18 +2,18 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.kafka.scaladsl.Consumer.{Control, Message}
+import akka.kafka.scaladsl.Consumer.{ Control, Message }
 import akka.kafka.scaladsl.Producer
 import akka.kafka.scaladsl.Producer.Result
 import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.{RequestBuilder, ScrollPublisher}
+import com.sksamuel.elastic4s.streams.{ RequestBuilder, ScrollPublisher }
 import it.dtk.model._
 import it.dtk.protobuf._
 import it.dtk.reactive.util.KafkaUtils
-import it.dtk.{GanderHelper, _}
+import it.dtk.{ GanderHelper, _ }
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization._
 import org.json4s.NoTypeHints
@@ -25,8 +25,8 @@ import org.json4s.jackson.Serialization._
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 08/03/16.
-  */
+ * Created by fabiofumarola on 08/03/16.
+ */
 object helpers {
   val web = HttpDownloader
   val feedExtr = RomeFeedHelper
@@ -106,7 +106,8 @@ object helpers {
       Sink.fromSubscriber(client.subscriber[FlattenedNews](
         batchSize = batchSize,
         concurrentRequests = concurrentRequests,
-        errorFn = (ex: Throwable) => println(ex.getLocalizedMessage)))
+        errorFn = (ex: Throwable) => println(ex.getLocalizedMessage)
+      ))
     }
 
     def queryTermSource(client: ElasticClient, searchDef: SearchDefinition)(implicit system: ActorSystem): Source[QueryTerm, NotUsed] = {

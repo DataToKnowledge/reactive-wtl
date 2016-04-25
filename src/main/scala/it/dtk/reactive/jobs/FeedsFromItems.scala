@@ -5,7 +5,7 @@ import java.net.URL
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.scaladsl.{ Flow, Source }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es._
 import it.dtk.model.Feed
@@ -16,8 +16,9 @@ import org.joda.time.DateTime
 /**
  * Created by fabiofumarola on 04/04/16.
  */
-class FeedsFromItems(configFile: String)(implicit val system: ActorSystem,
-                                         implicit val mat: ActorMaterializer) {
+class FeedsFromItems(configFile: String)(implicit
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -33,7 +34,7 @@ class FeedsFromItems(configFile: String)(implicit val system: ActorSystem,
   val consumerGroup = config.as[String]("kafka.groups.feed_from_items")
   val readTopic = config.as[String]("kafka.topics.feed_items")
 
-  val client = elasticClient(esHosts, clusterName)
+  val client = ESUtil.elasticClient(esHosts, clusterName)
 
   def run() {
 

@@ -3,10 +3,10 @@ package it.dtk.reactive.jobs
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, ClosedShape, ThrottleMode}
+import akka.stream.{ ActorMaterializer, ClosedShape, ThrottleMode }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es._
-import it.dtk.model.{Feed, SchedulerData}
+import it.dtk.model.{ Feed, SchedulerData }
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
 import net.ceedubs.ficus.Ficus._
@@ -17,10 +17,11 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
-class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
-                                       implicit val mat: ActorMaterializer) {
+ * Created by fabiofumarola on 09/03/16.
+ */
+class ProcessFeeds(configFile: String)(implicit
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -31,7 +32,7 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
   val parallel = config.as[Int]("elastic.feeds.parallel")
 
-  val client = elasticClient(esHosts, clusterName)
+  val client = ESUtil.elasticClient(esHosts, clusterName)
 
   //Kafka Params
   val kafkaBrokers = config.as[String]("kafka.brokers")
@@ -46,7 +47,6 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
 
   def duplicatedUrl(uri: String): Boolean = {
     val found = Option(jedis.get(uri))
-
     if (found.isEmpty) jedis.set(uri, "1")
     else jedis.incr(uri)
 
@@ -84,14 +84,12 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
     RunnableGraph.fromGraph(saveGraph).run()
   }
 
-
   def processArticles() =
     Flow[List[Article]]
       .mapConcat(identity)
       .filterNot(a => duplicatedUrl(a.uri))
       .throttle(1, 1.second, 200, ThrottleMode.Shaping)
       .map(gander.mainContent)
-
 
   def extractArticles(): Flow[Feed, (Feed, List[Article]), NotUsed] =
     Flow[Feed].map { f =>
@@ -106,7 +104,8 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
         lastTime = Option(DateTime.now),
         parsedUrls = parsedUrls.take(200),
         count = f.count + articles.size,
-        schedulerData = nextSchedule)
+        schedulerData = nextSchedule
+      )
       (fUpdated, articles)
     }
 }
