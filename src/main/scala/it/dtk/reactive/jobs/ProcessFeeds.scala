@@ -44,6 +44,15 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
   val jedis = new Jedis(redisHost)
   jedis.select(redisDB)
 
+  def duplicatedUrl(uri: String): Boolean = {
+    val found = Option(jedis.get(uri))
+
+    if (found.isEmpty) jedis.set(uri, "1")
+    else jedis.incr(uri)
+
+    found.isDefined
+  }
+
   val interval = config.as[FiniteDuration]("schedulers.feeds.each")
 
   def run(): Unit = {
@@ -74,14 +83,6 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
     RunnableGraph.fromGraph(saveGraph).run()
   }
 
-  def duplicatedUrl(uri: String): Boolean = {
-    val found = Option(jedis.get(uri))
-
-    if (found.isEmpty) jedis.set(uri, "1")
-    else jedis.incr(uri)
-
-    found.isDefined
-  }
 
   def processArticles() =
     Flow[List[Article]]

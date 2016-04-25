@@ -131,21 +131,4 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
     list.filter(_.tags.contains("NaturalPerson"))
       .map(_.name)
   }
-
-  //  def elasticSink(): Sink[FlattenedNews, NotUsed] = {
-  //    implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
-  //
-  //    implicit val builder = new RequestBuilder[FlattenedNews] {
-  //      override def request(n: FlattenedNews): BulkCompatibleDefinition =
-  //        index into feedsIndexPath id n.uri source write(n)
-  //    }
-  //
-  //    val elasticSink = client.subscriber[FlattenedNews](
-  //      batchSize = batchSize,
-  //      concurrentRequests = parallel,
-  //      completionFn = () => println("all done"),
-  //      errorFn = (ex: Throwable) => println(ex.getLocalizedMessage)
-  //    )
-  //    Sink.fromSubscriber(elasticSink)
-  //  }
 }

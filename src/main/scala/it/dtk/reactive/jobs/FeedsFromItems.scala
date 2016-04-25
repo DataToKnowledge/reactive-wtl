@@ -7,12 +7,11 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source}
 import com.typesafe.config.ConfigFactory
-import it.dtk.es.ElasticFeeds
+import it.dtk.es._
 import it.dtk.model.Feed
 import it.dtk.reactive.jobs.helpers._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
-import it.dtk.es._
 
 /**
  * Created by fabiofumarola on 04/04/16.

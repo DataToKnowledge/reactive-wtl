@@ -2,11 +2,8 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Flow, Source, _}
-import akka.stream.{ActorMaterializer, ClosedShape}
-import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.ScrollPublisher
-import com.sksamuel.elastic4s.{HitAs, RichSearchHit}
+import akka.stream.scaladsl.{ Flow, Source, _ }
+import akka.stream.{ ActorMaterializer, ClosedShape }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
@@ -14,12 +11,7 @@ import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.helpers._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
-import org.json4s.NoTypeHints
-import org.json4s.ext.JodaTimeSerializers
-import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization
 import redis.clients.jedis.Jedis
-import it.dtk.es._
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -29,7 +21,7 @@ import scala.util.Random
  * Created by fabiofumarola on 08/03/16.
  */
 class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
-//  implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
+  //  implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
   //Elasticsearch Params
   val esHosts = config.as[String]("elastic.hosts")
