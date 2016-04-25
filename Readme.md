@@ -24,6 +24,9 @@ kafka-topics.sh --zookeeper zoo-1:2181,zoo-2:2181 --create --topic articles --re
 
 ```
 
+kafka-topics.sh --zookeeper 192.168.99.100:2181 --create --topic feed_items --replication-factor 1 \
+    --partition 3 --config cleanup.policy=compact
+
 ### Check all services are running
 
 - influxdb
@@ -42,8 +45,8 @@ To init the index
 
 SERVICES: TermsToKafka, FeedsToKafka, ProcessTerms, ProcessFeeds, TagArticles, ToElastic, InitIndex
 
-1. run the docker `docker run -dt --name ProcessTerms data2knowledge/reactive-wtl:1.4.4 -e docker -j ProcessTerms` ran 3 instances
-2. run the docker `docker run -dt --name ProcessFeeds data2knowledge/reactive-wtl:1.4.4 -e docker -j ProcessFeeds` ran 3 instances
-3. run the docker `docker run -dt --name TagArticles data2knowledge/reactive-wtl:1.4.4 -e docker -j TagArticles` ran 4 instances
-4. run the docker `docker run -dt --name ToElastic data2knowledge/reactive-wtl:1.4.4 -e docker -j ToElastic` ran 2 instances
-5. run the docker `docker run -dt --name FeedFromItems data2knowledge/reactive-wtl:1.4.4 -e docker -j FeedsFromItems` ran 1 instance
+1. run the docker `docker run -dt --name ProcessTerms data2knowledge/reactive-wtl:1.5.0 -e docker -j ProcessTerms` ran 3 instances
+2. run the docker `docker run -dt --name ProcessFeeds data2knowledge/reactive-wtl:1.5.0 -e docker -j ProcessFeeds` ran 3 instances
+3. run the docker `docker run -dt --name TagArticles data2knowledge/reactive-wtl:1.5.0 -e docker -j TagArticles` ran 4 instances
+4. run the docker `docker run -dt --name ToElastic data2knowledge/reactive-wtl:1.5.0 -e docker -j ToElastic` ran 2 instances
+5. run the docker `docker run -dt --name FeedFromItems data2knowledge/reactive-wtl:1.5.0 -e docker -j FeedsFromItems` ran 1 instance

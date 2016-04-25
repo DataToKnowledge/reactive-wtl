@@ -6,23 +6,18 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source}
-import com.softwaremill.react.kafka.{ConsumerProperties, ReactiveKafka}
 import com.typesafe.config.ConfigFactory
-import it.dtk.es.ElasticFeeds
+import it.dtk.es._
 import it.dtk.model.Feed
-import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.helpers._
-import it.dtk.reactive.util.InfluxDBWrapper
 import net.ceedubs.ficus.Ficus._
-import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.joda.time.DateTime
 
 /**
-  * Created by fabiofumarola on 04/04/16.
-  */
-class FeedsFromItems(configFile: String, kafka: ReactiveKafka)(implicit
-                                                               val system: ActorSystem,
-                                                               implicit val mat: ActorMaterializer) {
+ * Created by fabiofumarola on 04/04/16.
+ */
+class FeedsFromItems(configFile: String)(implicit val system: ActorSystem,
+                                         implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -38,16 +33,15 @@ class FeedsFromItems(configFile: String, kafka: ReactiveKafka)(implicit
   val consumerGroup = config.as[String]("kafka.groups.feed_from_items")
   val readTopic = config.as[String]("kafka.topics.feed_items")
 
-  val influxDB = new InfluxDBWrapper(config)
-
-  val client = new ElasticFeeds(esHosts, feedsDocPath, clusterName).client
+  val client = elasticClient(esHosts, clusterName)
 
   def run() {
 
-    val feedsSink = elasticFeedSink(client, feedsDocPath, batchSize, parallel)
+    val feedsSink = elastic.feedSink(client, feedsDocPath, batchSize, parallel)
+    val feedsSource = kafka.articleSource(kafkaBrokers, consumerGroup, consumerGroup, readTopic)
 
-    feedItemsSource()
-      .map(_.uri)
+    feedsSource
+      .map(_.value.uri)
       .via(feedFlow())
       .map { f => println(s"extracted feed ${f.url}"); f }
       .runWith(feedsSink)
@@ -70,16 +64,5 @@ class FeedsFromItems(configFile: String, kafka: ReactiveKafka)(implicit
         .filterNot(_.publisher.toLowerCase.contains("calcio"))
     }
 
-  def feedItemsSource(): Source[Article, NotUsed] = {
-    val publisher = kafka.consume(ConsumerProperties(
-      bootstrapServers = kafkaBrokers,
-      topic = readTopic,
-      groupId = consumerGroup,
-      valueDeserializer = new ByteArrayDeserializer()
-    ))
-
-    Source.fromPublisher(publisher)
-      .map(rec => Article.parseFrom(rec.value()))
-  }
 }
 

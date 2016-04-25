@@ -4,9 +4,8 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import com.softwaremill.react.kafka.{ ConsumerProperties, ReactiveKafka }
 import com.typesafe.config.ConfigFactory
-import it.dtk.nlp.{ DBpediaSpotLight, FocusLocation }
+import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
 import it.dtk.protobuf.Annotation.DocumentSection
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.helpers._
@@ -16,14 +15,14 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import redis.clients.jedis.Jedis
 
 import scala.concurrent.duration._
-import scala.language.{ implicitConversions, postfixOps }
+import scala.language.{implicitConversions, postfixOps}
 
 /**
- * Created by fabiofumarola on 09/03/16.
- */
-class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+  * Created by fabiofumarola on 09/03/16.
+  */
+class TagArticles(configFile: String)(implicit
+                                      val system: ActorSystem,
+                                      implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -51,13 +50,14 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
   val jedis = new Jedis(redisHost)
   jedis.select(redisDB)
 
-  val influxDB = new InfluxDBWrapper(config)
-
   def run() {
-    val taggedArticles = feedItemsSource()
+
+    val feedItemsSource = kafka.articleSource(kafkaBrokers, consumerGroup, consumerGroup, readTopic)
+    val articlesSink = kafka.articleSink(kafkaBrokers, writeTopic)
+
+    val taggedArticles = feedItemsSource
+      .map(_.value)
       .filterNot(a => duplicatedUrl(a.uri))
-      .groupedWithin(50, 20 seconds)
-      .flatMapConcat(s => Source(s.toSet))
       .map(annotateArticle)
       .map { a =>
         val enrichment = a.annotations.map(ann => dbpedia.enrichAnnotation(ann))
@@ -72,7 +72,9 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
       a
     }
 
-    saveArticlesToKafka(focusLocationArticles, kafka, kafkaBrokers, writeTopic).run()
+    focusLocationArticles
+      .map(a => kafka.wrap(writeTopic, a))
+      .runWith(articlesSink)
 
     system.registerOnTermination({
       dbpedia.close()
@@ -86,18 +88,6 @@ class TagArticles(configFile: String, kafka: ReactiveKafka)(implicit
     else jedis.incr(uri)
 
     found.isDefined
-  }
-
-  def feedItemsSource(): Source[Article, NotUsed] = {
-    val publisher = kafka.consume(ConsumerProperties(
-      bootstrapServers = kafkaBrokers,
-      topic = readTopic,
-      groupId = consumerGroup,
-      valueDeserializer = new ByteArrayDeserializer()
-    ))
-
-    Source.fromPublisher(publisher)
-      .map(rec => Article.parseFrom(rec.value()))
   }
 
   def annotateArticle(a: Article)(implicit dbpedia: DBpediaSpotLight): Article = {

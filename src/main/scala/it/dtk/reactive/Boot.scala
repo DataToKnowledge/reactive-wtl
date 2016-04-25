@@ -1,8 +1,7 @@
 package it.dtk.reactive
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializerSettings, ActorMaterializer, Supervision}
-import com.softwaremill.react.kafka.ReactiveKafka
+import akka.stream.{ ActorMaterializerSettings, ActorMaterializer, Supervision }
 import it.dtk.reactive.jobs._
 import org.rogach.scallop._
 
@@ -26,15 +25,16 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
 }
 
 /**
-  * Created by fabiofumarola on 15/03/16.
-  */
+ * Created by fabiofumarola on 15/03/16.
+ */
 object Boot {
 
   def main(args: Array[String]) {
     val conf = new Conf(args)
 
     val decider: Supervision.Decider = {
-      case ex => Supervision.Resume
+      case ex =>
+        Supervision.Restart
     }
 
     implicit val actorSystem = ActorSystem("ReactiveWtl")
@@ -42,17 +42,16 @@ object Boot {
       ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
     )
     implicit val executor = actorSystem.dispatcher
-    val kafka = new ReactiveKafka()
 
     val configFile = selectConfigFile(conf.env.get.get)
 
     conf.jobName.get match {
-      case Some("ProcessTerms") => new ProcessTerms(configFile, kafka).run()
-      case Some("ProcessFeeds") => new ProcessFeeds(configFile, kafka).run()
-      case Some("TagArticles") => new TagArticles(configFile, kafka).run()
-      case Some("ToElastic") => new ArticlesToElastic(configFile, kafka).run()
+      case Some("ProcessTerms") => new ProcessTerms(configFile).run()
+      case Some("ProcessFeeds") => new ProcessFeeds(configFile).run()
+      case Some("TagArticles") => new TagArticles(configFile).run()
+      case Some("ToElastic") => new ArticlesToElastic(configFile).run()
       case Some("InitIndex") => new InitIndex(configFile).run()
-      case Some("FeedsFromItems") => new FeedsFromItems(configFile, kafka).run()
+      case Some("FeedsFromItems") => new FeedsFromItems(configFile).run()
       case _ =>
         conf.printHelp()
         System.exit(1)
