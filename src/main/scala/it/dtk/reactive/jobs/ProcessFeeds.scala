@@ -17,8 +17,8 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 /**
- * Created by fabiofumarola on 09/03/16.
- */
+  * Created by fabiofumarola on 09/03/16.
+  */
 class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
                                        implicit val mat: ActorMaterializer) {
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -73,10 +73,11 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
 
       val unzip = b.add(Unzip[Feed, List[Article]]())
       val printFeed = Flow[Feed].map { f => println(f); f }
+      val toMessage = Flow[Article].map(a => kafka.wrap(writeTopic, a))
 
       feedArticles ~> unzip.in
       unzip.out0 ~> feedsSink
-      unzip.out1 ~> processArticles() ~> kafkaSink
+      unzip.out1 ~> processArticles() ~> toMessage ~> kafkaSink
       ClosedShape
     }
 
@@ -90,7 +91,7 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
       .filterNot(a => duplicatedUrl(a.uri))
       .throttle(1, 1.second, 200, ThrottleMode.Shaping)
       .map(gander.mainContent)
-      .map(a => kafka.wrap(a))
+
 
   def extractArticles(): Flow[Feed, (Feed, List[Article]), NotUsed] =
     Flow[Feed].map { f =>

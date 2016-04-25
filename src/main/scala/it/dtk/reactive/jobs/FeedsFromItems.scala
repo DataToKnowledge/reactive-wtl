@@ -38,7 +38,7 @@ class FeedsFromItems(configFile: String)(implicit val system: ActorSystem,
   def run() {
 
     val feedsSink = elastic.feedSink(client, feedsDocPath, batchSize, parallel)
-    val feedsSource = kafka.articleSource(kafkaBrokers, consumerGroup, readTopic)
+    val feedsSource = kafka.articleSource(kafkaBrokers, consumerGroup, consumerGroup, readTopic)
 
     feedsSource
       .map(_.value.uri)

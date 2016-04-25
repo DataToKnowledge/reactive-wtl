@@ -15,8 +15,8 @@ import org.joda.time.DateTime
 import scala.util.Try
 
 /**
- * Created by fabiofumarola on 10/03/16.
- */
+  * Created by fabiofumarola on 10/03/16.
+  */
 class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -38,7 +38,7 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
   val client = elasticClient(esHosts, clusterName)
 
   def run() {
-    val articlesSource = kafka.articleSource(kafkaBrokers, groupId, readTopic)
+    val articlesSource = kafka.articleSource(kafkaBrokers, groupId, groupId, readTopic)
     val articlesSink = elastic.flattenedNewsSink(client, indexPath, batchSize, 3)
 
     var counter = 1
@@ -72,10 +72,10 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
           pin = a.focusLocation.map(_.pin))
         n
       }.map { n =>
-        println(s" $counter saving news ${n.uri}")
-        counter += 1
-        n
-      }.to(articlesSink).run()
+      println(s" $counter saving news ${n.uri}")
+      counter += 1
+      n
+    }.to(articlesSink).run()
   }
 
   def cleanPublisher(publisher: String): String = {
@@ -90,12 +90,12 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
   val tagRegex = "^Q\\d*".r
 
   /**
-   *
-   * @param annotations
-   * @return all the annotations where
-   *         1. tags with length > 2, and does not match with Q\d*
-   *         2. name with length > 2
-   */
+    *
+    * @param annotations
+    * @return all the annotations where
+    *         1. tags with length > 2, and does not match with Q\d*
+    *         2. name with length > 2
+    */
   def convertAnnotations(annotations: Seq[Annotation]): Seq[SemanticTag] = {
     annotations.groupBy(_.surfaceForm.toLowerCase).map {
       case (name, list) =>

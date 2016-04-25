@@ -24,6 +24,9 @@ kafka-topics.sh --zookeeper zoo-1:2181,zoo-2:2181 --create --topic articles --re
 
 ```
 
+kafka-topics.sh --zookeeper 192.168.99.100:2181 --create --topic feed_items --replication-factor 1 \
+    --partition 3 --config cleanup.policy=compact
+
 ### Check all services are running
 
 - influxdb

@@ -33,7 +33,8 @@ object Boot {
     val conf = new Conf(args)
 
     val decider: Supervision.Decider = {
-      case ex => Supervision.Restart
+      case ex =>
+        Supervision.Restart
     }
 
     implicit val actorSystem = ActorSystem("ReactiveWtl")

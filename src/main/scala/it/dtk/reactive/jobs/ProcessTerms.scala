@@ -2,8 +2,8 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{ Flow, Source, _ }
-import akka.stream.{ ActorMaterializer, ClosedShape }
+import akka.stream.scaladsl.{Flow, Source, _}
+import akka.stream.{ActorMaterializer, ClosedShape}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticQueryTerms
 import it.dtk.model._
@@ -18,8 +18,8 @@ import scala.language.implicitConversions
 import scala.util.Random
 
 /**
- * Created by fabiofumarola on 08/03/16.
- */
+  * Created by fabiofumarola on 08/03/16.
+  */
 class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   //  implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -49,12 +49,13 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
   jedis.select(redisDB)
 
   def run(): Unit = {
-    val feedItemsSink = kafka.feedItemsSink(kafkaBrokers, writeTopic)
+    val kafkaSink = kafka.feedItemsSink(kafkaBrokers, writeTopic)
     val feedsSink = elastic.feedSink(client.client, feedsIndexPath, batchSize, 2)
     val queryTermSink = elastic.queryTermSink(client.client, termsIndexPath, batchSize, 2)
 
-    val termArticlesSource = Source.tick(10.second, interval, 1)
+    val termArticlesSource = Source.tick(10.second, 10.seconds, 1) //interval
       .flatMapConcat(_ => elastic.queryTermSource(client.client, client.queryTermsSortedDesc()))
+      .take(50)
       .map { qt =>
         Thread.sleep(Random.nextInt(5000))
         val urls = Seq(terms.generateUrl(qt.terms, qt.lang, hostname))
@@ -93,11 +94,12 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
       val updateQueryTerms = Flow[(QueryTerm, List[Article])]
         .map(_._1.copy(timestamp = Option(DateTime.now())))
 
-      val articleToMessage = Flow[Article].map(a => kafka.wrap(a))
+      val articleToMessage = Flow[Article]
+        .map(a => kafka.wrap(writeTopic, a))
 
       termArticlesSource ~> bcast.in
-      bcast.out(0) ~> filterAndProcess ~> printArticle ~> articleToMessage ~> feedItemsSink
-      bcast.out(1) ~> feedFlow() ~> feedsSink
+      bcast.out(0) ~> filterAndProcess ~> printArticle ~> articleToMessage ~> kafkaSink
+      bcast.out(1) ~> extractFeeds ~> feedsSink
       bcast.out(2) ~> updateQueryTerms ~> printQueryTerm ~> queryTermSink
       ClosedShape
     }
@@ -113,7 +115,7 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
     found.isDefined
   }
 
-  def feedFlow(): Flow[(QueryTerm, List[Article]), Feed, NotUsed] = Flow[(QueryTerm, List[Article])]
+  def extractFeeds(): Flow[(QueryTerm, List[Article]), Feed, NotUsed] = Flow[(QueryTerm, List[Article])]
     .mapConcat(_._2)
     .map(a => a.publisher -> html.host(a.uri))
     .filter(_._2.nonEmpty)
