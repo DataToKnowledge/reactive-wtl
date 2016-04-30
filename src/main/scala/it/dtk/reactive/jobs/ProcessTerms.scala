@@ -11,7 +11,6 @@ import it.dtk.{ NewsUtils, QueryTermsSearch }
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
 import redis.clients.jedis.Jedis
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -112,7 +111,6 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
     val found = Option(jedis.get(uri))
     if (found.isEmpty) jedis.set(uri, "1")
     else jedis.incr(uri)
-
     found.isDefined
   }
 

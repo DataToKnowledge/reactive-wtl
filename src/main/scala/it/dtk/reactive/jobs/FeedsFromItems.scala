@@ -54,6 +54,4 @@ class FeedsFromItems(configFile: String)(implicit
     .mapAsync(1)(url => NewsUtils.extractRss(url))
     .mapConcat(identity)
     .filterNot(f => f.url.contains("comment") || f.url.contains("calcio"))
-
 }
-

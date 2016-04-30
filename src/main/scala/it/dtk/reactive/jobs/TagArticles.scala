@@ -8,7 +8,6 @@ import it.dtk.protobuf.Annotation.DocumentSection
 import it.dtk.protobuf._
 import net.ceedubs.ficus.Ficus._
 import redis.clients.jedis.Jedis
-
 import scala.language.{ implicitConversions, postfixOps }
 import KafkaHelper._
 

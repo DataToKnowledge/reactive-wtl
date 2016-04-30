@@ -8,7 +8,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import it.dtk.NewsUtils
-import it.dtk.es.{ESUtil, ElasticGoogleNews, ElasticQueryTerms}
+import it.dtk.es.{ ESUtil, ElasticGoogleNews, ElasticQueryTerms }
 import it.dtk.model.GoogleNews
 import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.ElasticHelper._
@@ -22,8 +22,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 /**
-  * Created by fabiofumarola on 30/04/16.
-  */
+ * Created by fabiofumarola on 30/04/16.
+ */
 class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")

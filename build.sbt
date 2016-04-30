@@ -20,7 +20,6 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream-kafka" % "0.11-M2",
       "com.typesafe.akka" %% "akka-stream" % "2.4.4",
-      //      "org.slf4j" % "slf4j-nop" % "1.7.18",
       "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.1",
       "com.typesafe.akka" %% "akka-http-core" % "2.4.4",
       "org.rogach" %% "scallop" % "1.0.0",
