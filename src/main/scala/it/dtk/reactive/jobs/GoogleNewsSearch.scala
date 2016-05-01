@@ -1,30 +1,27 @@
 package it.dtk.reactive.jobs
 
-import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.event.Logging
-import akka.stream.Attributes.LogLevels
+import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import it.dtk.NewsUtils
-import it.dtk.es.{ ESUtil, ElasticGoogleNews, ElasticQueryTerms }
+import it.dtk.es.ESUtil
 import it.dtk.model.GoogleNews
 import it.dtk.protobuf.Article
 import it.dtk.reactive.jobs.ElasticHelper._
+import it.dtk.reactive.jobs.Utils._
+import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
 import redis.clients.jedis.Jedis
-import net.ceedubs.ficus.Ficus._
-import scala.concurrent.duration._
-import Utils._
 
-import scala.concurrent.duration.FiniteDuration
-import scala.util.Random
+import scala.concurrent.duration.{FiniteDuration, _}
 
 /**
- * Created by fabiofumarola on 30/04/16.
- */
+  * Created by fabiofumarola on 30/04/16.
+  */
 class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
+  val logName = this.getClass.getSimpleName
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
   //Elasticsearch Params
@@ -54,24 +51,12 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
 
   def run(): Unit = {
 
-    implicit val log = Logging(system, this.getClass)
-
-    (1 to 10)
-      .map { v =>
-        log.debug("debug")
-        log.info("info")
-        log.error("error")
-        log.warning("warning")
-      }
-
-    val source = Source.tick(1.seconds, 60 minutes, 1)
-      .log("GoogleNews", x => s"Starting extraction at ${DateTime.now()}")
-      .withAttributes(Attributes.logLevels(onElement = Logging.WarningLevel))
+    val source = Source.tick(10.seconds, interval, 1)
+      .log(logName, x => s"Starting extraction at ${DateTime.now()}")
+//      .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
       .flatMapConcat(_ => ElasticHelper.googleNewsSource(client, googleNewsIndexPath))
       .throttle(1, 5.seconds, 1, ThrottleMode.shaping)
 
-    //    val source: Source[GoogleNews, NotUsed] = ElasticHelper.googleNewsSource(client, googleNewsIndexPath)
-    //      .throttle(1, 5.seconds, 1, ThrottleMode.shaping)
 
     val esFeedsSink = feedSink(client, feedsDocPath, batchSize, parallel)
     val kafkaSink = KafkaHelper.articleSink(kafkaBrokers, writeTopic)
@@ -81,9 +66,9 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
 
       val bcast = b.add(Broadcast[Article](2))
 
-      source ~> queryGoogleNews ~> bcast.in //~> filterUrl
-      bcast.out(0) ~> mainContent ~> printArticle("GoogleNews") ~> articleToMessage ~> kafkaSink
-      bcast.out(1) ~> extractFeeds ~> printFeed("GoogleNews") ~> esFeedsSink
+      source ~> queryGoogleNews ~> filterUrl ~> bcast.in
+      bcast.out(0) ~> mainContent ~> printArticle(logName) ~> articleToMessage ~> kafkaSink
+      bcast.out(1) ~> extractFeeds ~> printFeed(logName) ~> esFeedsSink
 
       ClosedShape
     }
@@ -96,7 +81,7 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
     .filter(_.isSuccess)
     .map(_.get.toList)
     .mapConcat(identity)
-    .log("GoogleNews", (a: Article) => s"extracted news with url ${a.uri}")
+    .log(logName, (a: Article) => s"extracted news with url ${a.uri}")
 
   def filterUrl = Flow[Article]
     .filterNot(a => duplicatedUrl(a.uri))
