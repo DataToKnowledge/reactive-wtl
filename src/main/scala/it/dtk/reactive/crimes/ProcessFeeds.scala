@@ -1,4 +1,4 @@
-package it.dtk.reactive.jobs
+package it.dtk.reactive.crimes
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -10,8 +10,8 @@ import it.dtk.NewsUtils
 import it.dtk.es._
 import it.dtk.model.{Feed, SchedulerData}
 import it.dtk.protobuf._
-import it.dtk.reactive.jobs.ElasticHelper._
-import it.dtk.reactive.jobs.KafkaHelper._
+import it.dtk.reactive.crimes.ElasticHelper._
+import it.dtk.reactive.crimes.KafkaHelper._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
 import redis.clients.jedis.Jedis

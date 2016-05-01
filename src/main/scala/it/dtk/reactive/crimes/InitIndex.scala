@@ -1,4 +1,4 @@
-package it.dtk.reactive.jobs
+package it.dtk.reactive.crimes
 
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ElasticAdmin

@@ -1,4 +1,4 @@
-package it.dtk.reactive.jobs
+package it.dtk.reactive.crimes
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{ Flow, Source, _ }

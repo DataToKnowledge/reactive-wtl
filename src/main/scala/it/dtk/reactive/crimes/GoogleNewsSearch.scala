@@ -1,4 +1,4 @@
-package it.dtk.reactive.jobs
+package it.dtk.reactive.crimes
 
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
@@ -9,8 +9,8 @@ import it.dtk.NewsUtils
 import it.dtk.es.ESUtil
 import it.dtk.model.GoogleNews
 import it.dtk.protobuf.Article
-import it.dtk.reactive.jobs.ElasticHelper._
-import it.dtk.reactive.jobs.Utils._
+import it.dtk.reactive.crimes.ElasticHelper._
+import it.dtk.reactive.crimes.Utils._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
 import redis.clients.jedis.Jedis
@@ -53,9 +53,9 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
 
     val source = Source.tick(10.seconds, interval, 1)
       .log(logName, x => s"Starting extraction at ${DateTime.now()}")
-//      .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
+      //      .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
       .flatMapConcat(_ => ElasticHelper.googleNewsSource(client, googleNewsIndexPath))
-      .throttle(1, 5.seconds, 1, ThrottleMode.shaping)
+
 
 
     val esFeedsSink = feedSink(client, feedsDocPath, batchSize, parallel)
@@ -77,7 +77,9 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
   }
 
   def queryGoogleNews() = Flow[GoogleNews]
+    .throttle(1, 5.seconds, 1, ThrottleMode.shaping)
     .map(q => NewsUtils.extractFromGoogleNews(q.search, q.lang))
+    .log(logName, m => s"Parsed Google News ${m.isSuccess}")
     .filter(_.isSuccess)
     .map(_.get.toList)
     .mapConcat(identity)
