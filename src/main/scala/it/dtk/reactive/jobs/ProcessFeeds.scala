@@ -78,7 +78,7 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
 
       source ~> parseFeed ~> printFeedArticle(logName) ~> unzip.in
       unzip.out0 ~> feedsSink
-      unzip.out1.async ~> processArticles() ~> printArticle(logName) ~> toMessage ~> articleSink
+      unzip.out1 ~> processArticles() ~> printArticle(logName) ~> toMessage ~> articleSink
 
       ClosedShape
     }
