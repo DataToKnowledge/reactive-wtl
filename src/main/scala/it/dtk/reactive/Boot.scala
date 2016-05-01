@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.config.ConfigFactory
-import it.dtk.reactive.crimes._
+import it.dtk.reactive.jobs._
 import org.rogach.scallop._
 import org.slf4j.LoggerFactory
 

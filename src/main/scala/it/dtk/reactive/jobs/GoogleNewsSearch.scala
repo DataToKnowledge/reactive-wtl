@@ -1,4 +1,4 @@
-package it.dtk.reactive.crimes
+package it.dtk.reactive.jobs
 
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
@@ -9,8 +9,8 @@ import it.dtk.NewsUtils
 import it.dtk.es.ESUtil
 import it.dtk.model.GoogleNews
 import it.dtk.protobuf.Article
-import it.dtk.reactive.crimes.ElasticHelper._
-import it.dtk.reactive.crimes.Utils._
+import it.dtk.reactive.jobs.ElasticHelper._
+import it.dtk.reactive.jobs.Utils._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
 import redis.clients.jedis.Jedis

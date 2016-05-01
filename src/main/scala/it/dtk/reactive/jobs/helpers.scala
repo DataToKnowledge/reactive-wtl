@@ -1,4 +1,4 @@
-package it.dtk.reactive.crimes
+package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem

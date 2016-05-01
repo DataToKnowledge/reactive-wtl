@@ -1,4 +1,4 @@
-package it.dtk.reactive.crimes
+package it.dtk.reactive.jobs
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer

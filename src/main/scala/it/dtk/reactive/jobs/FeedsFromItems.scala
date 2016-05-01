@@ -1,4 +1,4 @@
-package it.dtk.reactive.crimes
+package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -8,8 +8,8 @@ import com.typesafe.config.ConfigFactory
 import it.dtk.NewsUtils
 import it.dtk.es._
 import it.dtk.model.Feed
-import it.dtk.reactive.crimes.ElasticHelper._
-import it.dtk.reactive.crimes.KafkaHelper._
+import it.dtk.reactive.jobs.ElasticHelper._
+import it.dtk.reactive.jobs.KafkaHelper._
 import net.ceedubs.ficus.Ficus._
 
 /**
