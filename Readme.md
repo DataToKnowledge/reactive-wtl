@@ -45,8 +45,10 @@ To init the index
 
 SERVICES: TermsToKafka, FeedsToKafka, ProcessTerms, ProcessFeeds, TagArticles, ToElastic, InitIndex
 
-1. run the docker `docker rm -f ProcessTerms && docker run -dt --name ProcessTerms data2knowledge/reactive-wtl:1.5.1 -e docker -j ProcessTerms` ran 3 instances
+1. run the docker `docker rm -f GoogleNews && docker run -dt --name GoogleNews data2knowledge/reactive-wtl:1.5.1 -e docker -j GoogleNews` ran 2 instances
 2. run the docker `docker rm -f ProcessFeeds && docker run -dt --name ProcessFeeds data2knowledge/reactive-wtl:1.5.1 -e docker -j ProcessFeeds` ran 3 instances
 3. run the docker `docker rm -f TagArticles && docker run -dt --name TagArticles data2knowledge/reactive-wtl:1.5.1 -e docker -j TagArticles` ran 4 instances
 4. run the docker `docker rm -f ToElastic && docker run -dt --name ToElastic data2knowledge/reactive-wtl:1.5.1 -e docker -j ToElastic` ran 2 instances
+
+Not
 5. run the docker `docker rm -f FeedFromItems && docker run -dt --name FeedFromItems data2knowledge/reactive-wtl:1.5.1 -e docker -j FeedsFromItems` ran 1 instance

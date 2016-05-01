@@ -13,11 +13,12 @@ import it.dtk.reactive.jobs.KafkaHelper._
 import net.ceedubs.ficus.Ficus._
 
 /**
- * Created by fabiofumarola on 04/04/16.
- */
+  * Created by fabiofumarola on 04/04/16.
+  */
 class FeedsFromItems(configFile: String)(implicit
-  val system: ActorSystem,
-    implicit val mat: ActorMaterializer) {
+                                         val system: ActorSystem,
+                                         implicit val mat: ActorMaterializer) {
+  val logName = this.getClass.getSimpleName
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   //Elasticsearch Params
@@ -43,7 +44,7 @@ class FeedsFromItems(configFile: String)(implicit
     feedsSource
       .map(_.value.uri)
       .via(feedFlow())
-      .map { f => println(s"extracted feed ${f.url}"); f }
+      .log(logName, f => s"extracted feed ${f.url}")
       .runWith(feedsSink)
 
   }

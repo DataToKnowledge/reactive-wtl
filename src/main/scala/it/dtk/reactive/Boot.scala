@@ -2,13 +2,14 @@ package it.dtk.reactive
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer, Supervision }
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import com.typesafe.config.ConfigFactory
 import it.dtk.reactive.jobs._
 import org.rogach.scallop._
 import org.slf4j.LoggerFactory
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val jobs = List("ProcessTerms", "GoogleNews", "TagArticles",
+  val jobs = List("ProcessFeeds", "GoogleNews", "TagArticles",
     "ToElastic", "InitIndex", "FeedsFromItems")
   val envs = List("mac", "linux", "docker")
 
@@ -27,13 +28,15 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
 }
 
 /**
- * Created by fabiofumarola on 15/03/16.
- */
+  * Created by fabiofumarola on 15/03/16.
+  */
 object Boot {
 
   def main(args: Array[String]) {
+
     val conf = new Conf(args)
-    implicit val actorSystem = ActorSystem("ReactiveWtl")
+    val config = ConfigFactory.load("reactive_wtl")
+    implicit val actorSystem = ActorSystem("ReactiveWtl", config)
 
     val log = Logging(actorSystem, this.getClass)
 

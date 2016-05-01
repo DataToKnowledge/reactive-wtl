@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import it.dtk.es._
-import it.dtk.model.{ FlattenedNews, SemanticTag }
+import it.dtk.model.{FlattenedNews, SemanticTag}
 import it.dtk.protobuf._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
@@ -14,9 +14,10 @@ import org.joda.time.DateTime
 import scala.util.Try
 
 /**
- * Created by fabiofumarola on 10/03/16.
- */
+  * Created by fabiofumarola on 10/03/16.
+  */
 class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
+  val logName = this.getClass.getSimpleName
 
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -43,6 +44,7 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
     var counter = 1
 
     articlesSource
+      .log(logName, m => s"Converting Article with url ${m.key}")
       .map(_.value)
       .map { a =>
         val annotations = convertAnnotations(a.annotations)
@@ -71,11 +73,10 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
           pin = a.focusLocation.map(_.pin)
         )
         n
-      }.map { n =>
-        println(s" $counter saving news ${n.uri}")
-        counter += 1
-        n
-      }.to(articlesSink).run()
+      }.log(logName, a => {
+      counter += 1
+      s"Sending to ElasticSearch Article ${counter} with url ${a.uri}"
+    }).to(articlesSink).run()
   }
 
   def cleanPublisher(publisher: String): String = {
@@ -90,12 +91,12 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
   val tagRegex = "^Q\\d*".r
 
   /**
-   *
-   * @param annotations
-   * @return all the annotations where
-   *         1. tags with length > 2, and does not match with Q\d*
-   *         2. name with length > 2
-   */
+    *
+    * @param annotations
+    * @return all the annotations where
+    *         1. tags with length > 2, and does not match with Q\d*
+    *         2. name with length > 2
+    */
   def convertAnnotations(annotations: Seq[Annotation]): Seq[SemanticTag] = {
     annotations.groupBy(_.surfaceForm.toLowerCase).map {
       case (name, list) =>

@@ -2,8 +2,8 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.event.{ Logging, LoggingAdapter }
-import akka.kafka.scaladsl.Consumer.{ Control, Message }
+import akka.event.{Logging, LoggingAdapter}
+import akka.kafka.scaladsl.Consumer.{Control, Message}
 import akka.kafka.scaladsl.Producer
 import akka.kafka.scaladsl.Producer.Result
 import akka.stream.Attributes
@@ -11,7 +11,7 @@ import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.{ RequestBuilder, ScrollPublisher }
+import com.sksamuel.elastic4s.streams.{RequestBuilder, ScrollPublisher}
 import it.dtk.model._
 import it.dtk.protobuf._
 import it.dtk.reactive.util.KafkaUtils
@@ -142,11 +142,18 @@ class ArticleDes extends Deserializer[Article] {
 
 object Utils {
 
-  def printArticle(name: String)(implicit log: LoggingAdapter) = Flow[Article]
-    .log(name, (a: Article) => s"Processed Article with uri ${a.uri}")
-    .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
+  //(implicit log: LoggingAdapter)
 
-  def printFeed(name: String)(implicit log: LoggingAdapter) = Flow[Feed]
+  def printArticle(name: String) = Flow[Article]
+    .log(name, (a: Article) => s"Processed Article with uri ${a.uri}")
+
+  //    .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
+
+  def printFeed(name: String) = Flow[Feed]
     .log(name, (f: Feed) => s"Extracted Feed with uri ${f.url}")
-    .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
+
+  //    .withAttributes(Attributes.logLevels(onElement = Logging.InfoLevel))
+
+  def printFeedArticle(name: String) = Flow[(Feed, List[Article])]
+    .log(name, fa => s"extracted ${fa._2.size} articles extracted  from feed ${fa._1.url}")
 }
