@@ -100,15 +100,14 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
         val feedItems = NewsUtils.parseFeed(f.url, f.publisher).getOrElse(Seq.empty)
         val feedUrls = f.parsedUrls.toSet
         val articles = feedItems.filterNot(a => feedUrls.contains(a.uri)).toList
-
-        val nextSchedule = SchedulerData.next(f.schedulerData, articles.size)
+//        val nextSchedule = SchedulerData.next(f.schedulerData, articles.size)
         val parsedUrls = articles.map(_.uri) ::: f.parsedUrls
 
         val fUpdated = f.copy(
           lastTime = Option(DateTime.now),
           parsedUrls = parsedUrls.take(200),
           count = f.count + articles.size,
-          schedulerData = nextSchedule
+          schedulerData = f.schedulerData
         )
         (fUpdated, articles)
       }
