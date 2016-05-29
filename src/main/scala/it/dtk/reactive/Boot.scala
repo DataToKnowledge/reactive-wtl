@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val jobs = List("ProcessFeeds", "GoogleNews", "TagArticles",
-    "ToElastic", "InitIndex", "FeedsFromItems")
+    "ToElastic", "InitIndex", "FeedsFromItems", "SaveArticles")
   val envs = List("mac", "linux", "docker")
 
   val jobName = opt[String](descr = s"name of the job to run in $jobs", required = true)
@@ -60,6 +60,7 @@ object Boot {
       case Some("ToElastic") => new ArticlesToElastic(configFile).run()
       case Some("InitIndex") => new InitIndex(configFile).run()
       case Some("FeedsFromItems") => new FeedsFromItems(configFile).run()
+      case Some("SaveArticles") => new SaveArticles(configFile).run()
       case _ =>
         conf.printHelp()
         System.exit(1)
