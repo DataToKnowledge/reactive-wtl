@@ -43,7 +43,7 @@ object Boot {
     val decider: Supervision.Decider = {
       case ex =>
         log.error(ex, "Error at decider")
-        Supervision.Restart
+        Supervision.resume
     }
 
     implicit val materializer = ActorMaterializer(
