@@ -19,7 +19,7 @@ lazy val root = (project in file("."))
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream-kafka" % "0.11-M2",
-      "com.typesafe.akka" %% "akka-stream" % "2.4.4",
+      "com.typesafe.akka" %% "akka-stream" % "2.4.6",
       "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.1",
       "com.typesafe.akka" %% "akka-http-core" % "2.4.4",
       "org.rogach" %% "scallop" % "1.0.0",
@@ -41,5 +41,5 @@ dockerBaseImage := "java:8-jre"
 
 
 //dockerExposedPorts := Seq(9000)
-dockerExposedVolumes := Seq("/opt/docker/logs")
+dockerExposedVolumes := Seq("/opt/docker/logs", "/opt/docker/backup")
 dockerRepository := Option("data2knowledge")

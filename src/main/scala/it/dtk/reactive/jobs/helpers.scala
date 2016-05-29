@@ -2,11 +2,9 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.event.{Logging, LoggingAdapter}
 import akka.kafka.scaladsl.Consumer.{Control, Message}
 import akka.kafka.scaladsl.Producer
 import akka.kafka.scaladsl.Producer.Result
-import akka.stream.Attributes
 import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s._
