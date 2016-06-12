@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.{ExecCmd, Cmd}
 lazy val commons = Seq(
   organization := "it.datatoknowledge",
   name := "reactive-wtl",
-  version := "1.6.5",
+  version := "1.6.6",
   scalaVersion := "2.11.8",
   scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
   resolvers ++= Seq(
@@ -25,7 +25,8 @@ lazy val root = (project in file("."))
       "org.rogach" %% "scallop" % "1.0.0",
       "redis.clients" % "jedis" % "2.8.1",
       "com.typesafe.akka" %% "akka-slf4j" % "2.4.4",
-      "ch.qos.logback" % "logback-classic" % "1.1.3"
+      "ch.qos.logback" % "logback-classic" % "1.1.3",
+      "com.github.pathikrit" %% "better-files" % "2.16.0"
     )
   ) dependsOn algocore
 
