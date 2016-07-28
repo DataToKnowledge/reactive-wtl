@@ -47,9 +47,20 @@ class TagArticles(configFile: String)(implicit
 
   def run() {
 
+    val result = dbpedia.annotateText("Arrestati presso i carabinieri del comune di ostuni", DocumentSection.Title)
+
+    if (result.isEmpty){
+      println("Cannot get tags for text:Arrestati presso i carabinieri del comune di ostuni")
+      println("stopping everything")
+      System.exit(2)
+    } else {
+      println("successfully passed the base test with results")
+      println(result)
+    }
+
+
     val feedItemsSource = articleSource(kafkaBrokers, consumerGroup, consumerGroup, readTopic)
     val articlesSink = articleSink(kafkaBrokers, writeTopic)
-
 
     val taggedArticles = feedItemsSource
       .log(logName, m => s"Processing article with url ${m.key}")
