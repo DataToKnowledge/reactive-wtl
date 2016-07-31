@@ -14,6 +14,8 @@ import scala.util.{Failure, Success}
 import better.files._
 import java.io.{File => JFile}
 
+import it.dtk.protobuf.Article
+
 /**
   * Created by fabiofumarola on 29/05/16.
   */
@@ -31,12 +33,7 @@ class SaveArticles(configFile: String)(implicit val system: ActorSystem, implici
 
   def run() {
     val articlesSource = KafkaHelper.articleSource(kafkaBrokers, groupId, groupId, readTopic)
-
     val file = better.files.File.root/"opt"/"docker"/"backup"/"articles.log"
-
-    if (file.exists){
-
-    }
 
     val out = validFile().newOutputStream
 
