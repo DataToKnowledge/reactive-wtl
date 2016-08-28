@@ -42,6 +42,7 @@ class SaveArticles(configFile: String)(implicit val system: ActorSystem, implici
       .log(logName, a => s"saving article with url ${a.uri}")
       .map(a => a.writeDelimitedTo(out))
       .runWith(Sink.ignore)
+    //parseDelimitedFrom
 
     import scala.concurrent.ExecutionContext.Implicits.global
     future onComplete {
