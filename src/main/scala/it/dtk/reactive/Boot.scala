@@ -2,7 +2,7 @@ package it.dtk.reactive
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Supervision }
 import com.typesafe.config.ConfigFactory
 import it.dtk.reactive.jobs._
 import org.rogach.scallop._
@@ -28,8 +28,8 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
 }
 
 /**
-  * Created by fabiofumarola on 15/03/16.
-  */
+ * Created by fabiofumarola on 15/03/16.
+ */
 object Boot {
 
   def main(args: Array[String]) {

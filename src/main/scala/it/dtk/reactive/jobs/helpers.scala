@@ -2,14 +2,14 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.kafka.scaladsl.Consumer.{Control, Message}
+import akka.kafka.scaladsl.Consumer.{ Control, Message }
 import akka.kafka.scaladsl.Producer
 import akka.kafka.scaladsl.Producer.Result
 import akka.stream.scaladsl._
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.{RequestBuilder, ScrollPublisher}
+import com.sksamuel.elastic4s.streams.{ RequestBuilder, ScrollPublisher }
 import it.dtk.model._
 import it.dtk.protobuf._
 import it.dtk.reactive.util.KafkaUtils

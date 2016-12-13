@@ -1,7 +1,7 @@
 package it.dtk.reactive.jobs
 
 import akka.actor.ActorSystem
-import akka.event.{Logging, LoggingAdapter}
+import akka.event.{ Logging, LoggingAdapter }
 import akka.stream._
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
@@ -15,11 +15,11 @@ import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
 import redis.clients.jedis.Jedis
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.{ FiniteDuration, _ }
 
 /**
-  * Created by fabiofumarola on 30/04/16.
-  */
+ * Created by fabiofumarola on 30/04/16.
+ */
 class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   val logName = this.getClass.getSimpleName
 
@@ -53,10 +53,8 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
 
     val source = Source.tick(10.seconds, interval, 1)
       .log(logName, x => s"Starting extraction at ${DateTime.now()}")
-      //      .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
+      .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
       .flatMapConcat(_ => ElasticHelper.googleNewsSource(client, googleNewsIndexPath))
-
-
 
     val esFeedsSink = feedSink(client, feedsDocPath, batchSize, parallel)
     val kafkaSink = KafkaHelper.articleSink(kafkaBrokers, writeTopic)

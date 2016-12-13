@@ -10,15 +10,15 @@ import com.typesafe.config.ConfigFactory
 import net.ceedubs.ficus.Ficus._
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 import better.files._
-import java.io.{File => JFile}
+import java.io.{ File => JFile }
 
 import it.dtk.protobuf.Article
 
 /**
-  * Created by fabiofumarola on 29/05/16.
-  */
+ * Created by fabiofumarola on 29/05/16.
+ */
 class SaveArticles(configFile: String)(implicit val system: ActorSystem, implicit val mat: ActorMaterializer) {
   val logName = this.getClass.getSimpleName
 
@@ -33,7 +33,7 @@ class SaveArticles(configFile: String)(implicit val system: ActorSystem, implici
 
   def run() {
     val articlesSource = KafkaHelper.articleSource(kafkaBrokers, groupId, groupId, readTopic)
-    val file = better.files.File.root/"opt"/"docker"/"backup"/"articles.log"
+    val file = better.files.File.root / "opt" / "docker" / "backup" / "articles.log"
 
     val out = validFile().newOutputStream
 
@@ -54,10 +54,10 @@ class SaveArticles(configFile: String)(implicit val system: ActorSystem, implici
   }
 
   def validFile(): File = {
-    def loadFile = better.files.File.root/"opt"/"docker"/"backup"/ s"articles_${counter}.log"
+    def loadFile = better.files.File.root / "opt" / "docker" / "backup" / s"articles_${counter}.log"
     var file = loadFile
-    if (file.exists){
-      counter +=1
+    if (file.exists) {
+      counter += 1
       file = loadFile
     }
     file

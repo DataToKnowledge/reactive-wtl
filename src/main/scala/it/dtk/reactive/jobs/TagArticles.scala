@@ -3,20 +3,20 @@ package it.dtk.reactive.jobs
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import it.dtk.nlp.{DBpediaSpotLight, FocusLocation}
+import it.dtk.nlp.{ DBpediaSpotLight, FocusLocation }
 import it.dtk.protobuf.Annotation.DocumentSection
 import it.dtk.protobuf._
 import net.ceedubs.ficus.Ficus._
 import redis.clients.jedis.Jedis
-import scala.language.{implicitConversions, postfixOps}
+import scala.language.{ implicitConversions, postfixOps }
 import KafkaHelper._
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
+ * Created by fabiofumarola on 09/03/16.
+ */
 class TagArticles(configFile: String)(implicit
-                                      val system: ActorSystem,
-                                      implicit val mat: ActorMaterializer) {
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
   val logName = this.getClass.getSimpleName
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
@@ -49,7 +49,7 @@ class TagArticles(configFile: String)(implicit
 
     val result = dbpedia.annotateText("Arrestati presso i carabinieri del comune di ostuni", DocumentSection.Title)
 
-    if (result.isEmpty){
+    if (result.isEmpty) {
       println("Cannot get tags for text:Arrestati presso i carabinieri del comune di ostuni")
       println("stopping everything")
       System.exit(2)
@@ -57,7 +57,6 @@ class TagArticles(configFile: String)(implicit
       println("successfully passed the base test with results")
       println(result)
     }
-
 
     val feedItemsSource = articleSource(kafkaBrokers, consumerGroup, consumerGroup, readTopic)
     val articlesSink = articleSink(kafkaBrokers, writeTopic)
@@ -77,7 +76,7 @@ class TagArticles(configFile: String)(implicit
       a.copy(focusLocation = location)
     }.log(logName, a => s"extracted annotations and focus location for article ${a.uri}")
       .map(a => wrap(writeTopic, a))
-        .log(logName, m => s"sending to Kafka processed article with url ${m.key()}")
+      .log(logName, m => s"sending to Kafka processed article with url ${m.key()}")
       .runWith(articlesSink)
 
     system.registerOnTermination({

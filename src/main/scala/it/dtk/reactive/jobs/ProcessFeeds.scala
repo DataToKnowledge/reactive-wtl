@@ -4,11 +4,11 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.scaladsl._
-import akka.stream.{Graph, ActorMaterializer, ClosedShape, ThrottleMode}
+import akka.stream.{ Graph, ActorMaterializer, ClosedShape, ThrottleMode }
 import com.typesafe.config.ConfigFactory
 import it.dtk.NewsUtils
 import it.dtk.es._
-import it.dtk.model.{Feed, SchedulerData}
+import it.dtk.model.{ Feed, SchedulerData }
 import it.dtk.protobuf._
 import it.dtk.reactive.jobs.ElasticHelper._
 import it.dtk.reactive.jobs.KafkaHelper._
@@ -17,15 +17,15 @@ import org.joda.time.DateTime
 import redis.clients.jedis.Jedis
 import Utils._
 
-
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 /**
-  * Created by fabiofumarola on 09/03/16.
-  */
-class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
-                                       implicit val mat: ActorMaterializer) {
+ * Created by fabiofumarola on 09/03/16.
+ */
+class ProcessFeeds(configFile: String)(implicit
+  val system: ActorSystem,
+    implicit val mat: ActorMaterializer) {
 
   val logName = this.getClass.getSimpleName
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
@@ -100,7 +100,7 @@ class ProcessFeeds(configFile: String)(implicit val system: ActorSystem,
         val feedItems = NewsUtils.parseFeed(f.url, f.publisher).getOrElse(Seq.empty)
         val feedUrls = f.parsedUrls.toSet
         val articles = feedItems.filterNot(a => feedUrls.contains(a.uri)).toList
-//        val nextSchedule = SchedulerData.next(f.schedulerData, articles.size)
+        //        val nextSchedule = SchedulerData.next(f.schedulerData, articles.size)
         val parsedUrls = articles.map(_.uri) ::: f.parsedUrls
 
         val fUpdated = f.copy(
