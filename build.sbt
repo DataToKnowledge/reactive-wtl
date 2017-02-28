@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.{ExecCmd, Cmd}
 lazy val commons = Seq(
   organization := "it.datatoknowledge",
   name := "reactive-wtl",
-  version := "1.6.11",
+  version := "1.6.12",
   scalaVersion := "2.11.8",
   scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
   resolvers ++= Seq(
@@ -20,7 +20,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream-kafka" % "0.11-M2",
       "com.typesafe.akka" %% "akka-stream" % "2.4.6",
-      "com.sksamuel.elastic4s" %% "elastic4s-streams" % "2.2.1",
+      "com.sksamuel.elastic4s" %% "elastic4s-streams" % "5.2.9", //"2.2.1",
+      "com.sksamuel.elastic4s" %% "elastic4s-tcp" % "5.2.9",
       "com.typesafe.akka" %% "akka-http-core" % "2.4.4",
       "org.rogach" %% "scallop" % "1.0.0",
       "redis.clients" % "jedis" % "2.8.1",

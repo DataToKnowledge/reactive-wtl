@@ -110,7 +110,7 @@ object ElasticHelper {
       .map(hit => parse(hit.getSourceAsString).extract[Feed])
   }
 
-  def googleNewsSource(client: ElasticClient, indexPath: String)(implicit system: ActorSystem) = {
+  def googleNewsSource(client: ElasticClient, indexPath: String)(implicit system: ActorSystem): Source[GoogleNews, NotUsed] = {
     val publisher: ScrollPublisher = client.publisher(indexPath, keepAlive = "10m")
     Source.fromPublisher(publisher)
       .map(hit => parse(hit.getSourceAsString).extract[GoogleNews])

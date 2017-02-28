@@ -44,6 +44,8 @@ class SaveArticles(configFile: String)(implicit val system: ActorSystem, implici
       .runWith(Sink.ignore)
     //parseDelimitedFrom
 
+
+
     import scala.concurrent.ExecutionContext.Implicits.global
     future onComplete {
       case Success(value) => out.close()
