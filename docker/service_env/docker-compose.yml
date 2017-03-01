@@ -7,8 +7,8 @@ services:
       - elastic1
       - elastic2
     volumes:
-      - /Users/fabiofumarola/articles:/opt/docker/backup
-#      - /home/kdde:/opt/docker/backup
+#      - /Users/fabiofumarola/articles:/opt/docker/backup
+      - /home/kdde:/opt/docker/backup
     command: "-e prod_single -j LoadArticles"
 
 networks:
