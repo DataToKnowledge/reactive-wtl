@@ -1,5 +1,14 @@
 version: '3'
 services:
+  elastic_ui:
+    image: mobz/elasticsearch-head:5
+    ports:
+      - 9100:9100
+    links:
+      - elasticsearch1
+      - elasticsearch2
+    networks:
+      - esnet
   elasticsearch1:
     image: docker.elastic.co/elasticsearch/elasticsearch:5.2.2
     container_name: elasticsearch1
@@ -9,6 +18,7 @@ services:
       - http.host=0.0.0.0
       - transport.host=0.0.0.0
       - xpack.security.enabled=false
+      - node.name=wtl_1
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
 #      - "ES_JAVA_OPTS=-Xms2G -Xmx2G"
     ulimits:
@@ -22,6 +32,9 @@ services:
       - IPC_LOCK
     volumes:
       - esdata1:/usr/share/elasticsearch/data
+    expose:
+      - 9200
+      - 9300
     ports:
       - 9200:9200
       - 9300:9300
@@ -33,7 +46,12 @@ services:
     environment:
       - cluster.name=wheretolive
       - bootstrap.memory_lock=true
+      - http.host=0.0.0.0
+      - "http.cors.allow-origin=*"
+      - "http.cors.enabled=true"
+      - transport.host=0.0.0.0
       - xpack.security.enabled=false
+      - node.name=wtl_2
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
 #      - "ES_JAVA_OPTS=-Xms2G -Xmx2G"
       - "discovery.zen.ping.unicast.hosts=elasticsearch1"
@@ -51,6 +69,9 @@ services:
     ports:
       - 9201:9200
       - 9301:9300
+    expose:
+      - 9200
+      - 9300
     networks:
       - esnet
 
