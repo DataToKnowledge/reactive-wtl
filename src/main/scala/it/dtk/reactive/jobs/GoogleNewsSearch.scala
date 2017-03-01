@@ -28,7 +28,8 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
   val esHosts = config.as[String]("elastic.hosts")
   val clusterName = config.as[String]("elastic.clusterName")
   val hostname = config.as[String]("hostname")
-  val feedsDocPath = config.as[String]("elastic.docs.feeds")
+  val indexType = config.as[String]("elastic.docs.wtl_index")
+  val feedsDocType = config.as[String]("elastic.docs.feeds")
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
   val parallel = config.as[Int]("elastic.feeds.parallel")
 
@@ -56,7 +57,7 @@ class GoogleNewsSearch(configFile: String)(implicit val system: ActorSystem, imp
       .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel))
       .flatMapConcat(_ => ElasticHelper.googleNewsSource(client, googleNewsIndexPath))
 
-    val esFeedsSink = feedSink(client, feedsDocPath, batchSize, parallel)
+    val esFeedsSink = feedSink(client, indexType, feedsDocType, batchSize, parallel)
     val kafkaSink = KafkaHelper.articleSink(kafkaBrokers, writeTopic)
 
     val graph = GraphDSL.create() { implicit b =>

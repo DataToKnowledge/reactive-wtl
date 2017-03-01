@@ -42,6 +42,7 @@ object Boot {
 
     val decider: Supervision.Decider = {
       case ex =>
+        println(ex)
         log.error(ex, "Error at decider")
         Supervision.resume
     }

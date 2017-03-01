@@ -4,9 +4,10 @@ import java.net.URL
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import com.sksamuel.elastic4s.{ElasticClient, TcpClient}
 import com.typesafe.config.ConfigFactory
 import it.dtk.es._
-import it.dtk.model.{ FlattenedNews, SemanticTag }
+import it.dtk.model.{FlattenedNews, SemanticTag}
 import it.dtk.protobuf._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime
@@ -23,7 +24,8 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
 
   //Elasticsearch Params
   val esHosts = config.as[String]("elastic.hosts")
-  val indexPath = config.as[String]("elastic.docs.articles")
+  val indexType = config.as[String]("elastic.news_index")
+  val docType = config.as[String]("elastic.docs.articles")
   val clusterName = config.as[String]("elastic.clusterName")
 
   val hostname = config.as[String]("hostname")
@@ -35,11 +37,11 @@ class ArticlesToElastic(configFile: String)(implicit val system: ActorSystem, im
   val readTopic = config.as[String]("kafka.topics.articles")
   val groupId = config.as[String]("kafka.groups.articles_es")
 
-  val client = ESUtil.elasticClient(esHosts, clusterName)
+  val client: TcpClient = ESUtil.elasticClient(esHosts, clusterName)
 
   def run() {
     val articlesSource = KafkaHelper.articleSource(kafkaBrokers, groupId, groupId, readTopic)
-    val articlesSink = ElasticHelper.flattenedNewsSink(client, indexPath, batchSize, 3)
+    val articlesSink = ElasticHelper.flattenedNewsSink(client, indexType, docType, batchSize, 3)
 
     var counter = 1
 

@@ -14,11 +14,12 @@ class InitIndex(configFile: String) {
   //Elasticsearch Params
   val adminHost = config.as[String]("elastic.adminHost")
   val esHosts = config.as[String]("elastic.hosts")
-  val locationsPath = config.as[String]("elastic.docs.locations")
+  val indexType = config.as[String]("elastic.doc.wtl_index")
+  val locationsDocType = config.as[String]("elastic.docs.locations")
   val clusterName = config.as[String]("elastic.clusterName")
 
   def run(): Unit = {
-    val admin = new ElasticAdmin(adminHost, esHosts, locationsPath, clusterName)
+    val admin = new ElasticAdmin(adminHost, esHosts, indexType, locationsDocType, clusterName)
     admin.initWhereToLive()
     System.exit(0)
   }

@@ -8,6 +8,7 @@ services:
       - bootstrap.memory_lock=true
       - http.host=0.0.0.0
       - transport.host=0.0.0.0
+      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
 #      - "ES_JAVA_OPTS=-Xms2G -Xmx2G"
     ulimits:
@@ -32,6 +33,7 @@ services:
     environment:
       - cluster.name=wheretolive
       - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
 #      - "ES_JAVA_OPTS=-Xms2G -Xmx2G"
       - "discovery.zen.ping.unicast.hosts=elasticsearch1"
@@ -46,6 +48,9 @@ services:
       - IPC_LOCK
     volumes:
       - esdata2:/usr/share/elasticsearch/data
+    ports:
+      - 9201:9200
+      - 9301:9300
     networks:
       - esnet
 

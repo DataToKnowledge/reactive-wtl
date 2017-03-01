@@ -19,7 +19,7 @@ project/project/target
 .idea
 notebooks/.ipynb_checkpoints
 checkpoint/
-algocore/
+#algocore/
 dockerfile/
 .DS_Store
 log

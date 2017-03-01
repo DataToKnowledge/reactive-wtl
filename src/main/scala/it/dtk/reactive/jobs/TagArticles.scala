@@ -22,7 +22,8 @@ class TagArticles(configFile: String)(implicit
 
   //Elasticsearch Params
   val esHosts = config.as[String]("elastic.hosts")
-  val locationsDocPath = config.as[String]("elastic.docs.locations")
+  val indexType = config.as[String]("elastic.docs.wtl_index")
+  val locationsDocType = config.as[String]("elastic.docs.locations")
   val clusterName = config.as[String]("elastic.clusterName")
   val hostname = config.as[String]("hostname")
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
@@ -37,7 +38,7 @@ class TagArticles(configFile: String)(implicit
   val lang = config.as[String]("dbPedia.it.lang")
 
   implicit val dbpedia = new DBpediaSpotLight(dbPediaBaseUrl, lang)
-  val locExtractor = new FocusLocation(esHosts, locationsDocPath, clusterName)
+  val locExtractor = new FocusLocation(esHosts, indexType, locationsDocType, clusterName)
 
   //redis params
   val redisHost = config.as[String]("redis.host")

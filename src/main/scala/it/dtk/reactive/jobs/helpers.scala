@@ -2,14 +2,10 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.kafka.scaladsl.Consumer.{ Control, Message }
+import akka.kafka.scaladsl.Consumer.{Control, Message}
 import akka.kafka.scaladsl.Producer
 import akka.kafka.scaladsl.Producer.Result
 import akka.stream.scaladsl._
-import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s._
-import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.{ RequestBuilder, ScrollPublisher }
 import it.dtk.model._
 import it.dtk.protobuf._
 import it.dtk.reactive.util.KafkaUtils
@@ -20,6 +16,12 @@ import org.json4s.ext.JodaTimeSerializers
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization._
+import com.sksamuel.elastic4s.TcpClient
+import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.bulk.BulkCompatibleDefinition
+import com.sksamuel.elastic4s.searches.SearchDefinition
+import com.sksamuel.elastic4s.streams.ReactiveElastic._
+import com.sksamuel.elastic4s.streams.{RequestBuilder, ScrollPublisher}
 
 import scala.language.implicitConversions
 
@@ -51,39 +53,40 @@ object ElasticHelper {
 
   implicit val formats = Serialization.formats(NoTypeHints) ++ JodaTimeSerializers.all
 
-  def feedSink(client: ElasticClient, indexPath: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
+  def feedSink(client: TcpClient, indexType: String, docType: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
 
     implicit val builder = new RequestBuilder[Feed] {
-      def request(t: Feed): BulkCompatibleDefinition =
-        index into indexPath id t.publisher source write(t)
+      def request(f: Feed): BulkCompatibleDefinition = {
+        indexInto(indexType,docType) id f.publisher source write(f)
+      }
     }
     Sink.fromSubscriber(client.subscriber[Feed](batchSize, concurrentRequests))
   }
 
-  def queryTermSink(client: ElasticClient, indexPath: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
+  def queryTermSink(client: TcpClient, indexType: String, docType: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
     implicit val builder = new RequestBuilder[QueryTerm] {
       def request(t: QueryTerm): BulkCompatibleDefinition =
-        index into indexPath id t.terms.mkString("_") source write(t)
+        indexInto(indexType, docType) id t.terms.mkString("_") source write(t)
     }
 
     Sink.fromSubscriber(client.subscriber[QueryTerm](batchSize, concurrentRequests))
   }
 
-  def articleSink(client: ElasticClient, indexPath: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
+  def articleSink(client: TcpClient, indexType: String, docType: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
 
     implicit val builder = new RequestBuilder[FlattenedNews] {
       // the request returned doesn't have to be an index - it can be anything supported by the bulk api
       def request(t: FlattenedNews): BulkCompatibleDefinition =
-        index into indexPath id t.publisher source write(t)
+        indexInto(indexType, docType) id t.publisher source write(t)
     }
 
     Sink.fromSubscriber(client.subscriber[FlattenedNews](batchSize, concurrentRequests))
   }
 
-  def flattenedNewsSink(client: ElasticClient, indexPath: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
+  def flattenedNewsSink(client: TcpClient, indexType: String, docType: String, batchSize: Int, concurrentRequests: Int)(implicit system: ActorSystem) = {
     implicit val builder = new RequestBuilder[FlattenedNews] {
       override def request(n: FlattenedNews): BulkCompatibleDefinition =
-        index into indexPath id n.uri source write(n)
+        indexInto(indexType, docType) id n.uri source write(n)
     }
 
     Sink.fromSubscriber(client.subscriber[FlattenedNews](
@@ -93,27 +96,21 @@ object ElasticHelper {
     ))
   }
 
-  def queryTermSource(client: ElasticClient, searchDef: SearchDefinition)(implicit system: ActorSystem): Source[QueryTerm, NotUsed] = {
-    implicit object QueryTermsHitAs extends HitAs[QueryTerm] {
-      override def as(hit: RichSearchHit): QueryTerm = {
-        parse(hit.getSourceAsString).extract[QueryTerm]
-      }
-    }
-
+  def queryTermSource(client: TcpClient, searchDef: SearchDefinition)(implicit system: ActorSystem): Source[QueryTerm, NotUsed] = {
     Source.fromPublisher(client.publisher(searchDef size 10 scroll "10m"))
-      .map(res => res.as[QueryTerm])
+      .map(res => parse(res.sourceAsString).extract[QueryTerm])
   }
 
-  def feedSource(client: ElasticClient, indexPath: String)(implicit system: ActorSystem): Source[Feed, NotUsed] = {
+  def feedSource(client: TcpClient, indexPath: String)(implicit system: ActorSystem): Source[Feed, NotUsed] = {
     val publisher: ScrollPublisher = client.publisher(indexPath, keepAlive = "10m")
     Source.fromPublisher(publisher)
-      .map(hit => parse(hit.getSourceAsString).extract[Feed])
+      .map(hit => parse(hit.sourceAsString).extract[Feed])
   }
 
-  def googleNewsSource(client: ElasticClient, indexPath: String)(implicit system: ActorSystem): Source[GoogleNews, NotUsed] = {
+  def googleNewsSource(client: TcpClient, indexPath: String)(implicit system: ActorSystem): Source[GoogleNews, NotUsed] = {
     val publisher: ScrollPublisher = client.publisher(indexPath, keepAlive = "10m")
     Source.fromPublisher(publisher)
-      .map(hit => parse(hit.getSourceAsString).extract[GoogleNews])
+      .map(hit => parse(hit.sourceAsString).extract[GoogleNews])
   }
 }
 

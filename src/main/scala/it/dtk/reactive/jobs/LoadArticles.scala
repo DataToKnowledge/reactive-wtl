@@ -4,7 +4,7 @@ import java.net.URL
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import better.files.File
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ESUtil
@@ -21,21 +21,24 @@ class LoadArticles(configFile: String)(implicit val system: ActorSystem, implici
   val config = ConfigFactory.load(configFile).getConfig("reactive_wtl")
 
   val esHosts = config.as[String]("elastic.hosts")
-  val indexPath = config.as[String]("elastic.docs.articles")
+  val indexType = config.as[String]("elastic.docs.news_index")
+  val articleType = config.as[String]("elastic.docs.articles")
   val clusterName = config.as[String]("elastic.clusterName")
   val batchSize = config.as[Int]("elastic.bulk.batch_size")
   val client = ESUtil.elasticClient(esHosts, clusterName)
 
   def run(): Unit = {
 
-    val articlesSink = ElasticHelper.flattenedNewsSink(client, indexPath, batchSize, 3)
+    val articlesSink = ElasticHelper.flattenedNewsSink(client, indexType, articleType, batchSize, 3)
 
     val source = Source.fromIterator(() => new Iterator[Article] {
+      println("started the iterator")
       val file = File(config.getString("load_articles_path"))
       val in = file.newInputStream
       var article = Article.parseDelimitedFrom(in)
 
-      override def hasNext: Boolean = article.isEmpty
+
+      override def hasNext: Boolean = article.nonEmpty
 
       override def next(): Article = {
         val current = article.get
@@ -51,14 +54,16 @@ class LoadArticles(configFile: String)(implicit val system: ActorSystem, implici
 
     var counter = 0
 
-    source
+    val graph = source
       .map(convertTo)
       .log(logName, a => {
         counter += 1
         s"Sending to ElasticSearch Article $counter with url ${a.uri}"
       })
-      .to(articlesSink).run()
+      //      .to(Sink.foreach(println))
+      .to(articlesSink)
 
+    graph.run()
   }
 
   def convertTo(a: Article): FlattenedNews = {
@@ -81,10 +86,10 @@ class LoadArticles(configFile: String)(implicit val system: ActorSystem, implici
       annotations = annotations,
       crimes = filterCrimes(annotations),
       locations = filterLocations(annotations),
-      persons = Seq(),
+      persons = filterPerson(annotations),
       semanticNames = annotations.map(_.name).distinct,
-      semanticTags = annotations.
-        flatMap(_.tags.map(_.replace("_", " "))).distinct,
+      semanticTags = Seq(),
+//        annotations.flatMap(_.tags.map(_.replace("_", " "))).distinct,
       pin = a.focusLocation.map(_.pin)
     )
   }

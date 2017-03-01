@@ -27,12 +27,14 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
   val esHosts = config.as[String]("elastic.hosts")
   val clusterName = config.as[String]("elastic.clusterName")
   val hostname = config.as[String]("hostname")
-  val feedsIndexPath = config.as[String]("elastic.docs.feeds")
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
 
-  val termsIndexPath = config.as[String]("elastic.docs.query_terms")
+  val indexType = config.as[String]("elastic.docs.wtl_index")
+  val termDocType = config.as[String]("elastic.docs.query_terms")
+  val feedDocType = config.as[String]("elastic.docs.feeds")
 
-  val client = new ElasticQueryTerms(esHosts, termsIndexPath, clusterName)
+
+  val client = new ElasticQueryTerms(esHosts, indexType, termDocType, clusterName)
 
   //scheduler params
   val interval = config.as[FiniteDuration]("schedulers.queryTerms.each")
@@ -50,8 +52,8 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
 
   def run(): Unit = {
     val kafkaSink = KafkaHelper.feedItemsSink(kafkaBrokers, writeTopic)
-    val feedsSink = ElasticHelper.feedSink(client.client, feedsIndexPath, batchSize, 2)
-    val queryTermSink = ElasticHelper.queryTermSink(client.client, termsIndexPath, batchSize, 2)
+    val feedsSink = ElasticHelper.feedSink(client.client, indexType, feedDocType, batchSize, 2)
+    val queryTermSink = ElasticHelper.queryTermSink(client.client, indexType, termDocType, batchSize, 2)
 
     val termArticlesSource = Source.tick(10.second, interval, 1)
       .flatMapConcat(_ => ElasticHelper.queryTermSource(client.client, client.queryTermsSortedDesc()))

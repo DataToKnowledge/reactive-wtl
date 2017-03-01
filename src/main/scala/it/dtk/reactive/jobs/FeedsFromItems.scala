@@ -23,7 +23,8 @@ class FeedsFromItems(configFile: String)(implicit
 
   //Elasticsearch Params
   val esHosts = config.as[String]("elastic.hosts")
-  val feedsDocPath = config.as[String]("elastic.docs.feeds")
+  val indexType = config.as[String]("elastic.docs.wtl_index")
+  val feedsDocType = config.as[String]("elastic.docs.feeds")
   val clusterName = config.as[String]("elastic.clusterName")
   val hostname = config.as[String]("hostname")
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
@@ -38,7 +39,7 @@ class FeedsFromItems(configFile: String)(implicit
 
   def run() {
 
-    val feedsSink = feedSink(client, feedsDocPath, batchSize, parallel)
+    val feedsSink = feedSink(client, indexType, feedsDocType, batchSize, parallel)
     val feedsSource = articleSource(kafkaBrokers, consumerGroup, consumerGroup, readTopic)
 
     feedsSource

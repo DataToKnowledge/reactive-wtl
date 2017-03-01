@@ -32,7 +32,8 @@ class ProcessFeeds(configFile: String)(implicit
 
   //Elasticsearch Params
   val esHosts = config.as[String]("elastic.hosts")
-  val feedsDocPath = config.as[String]("elastic.docs.feeds")
+  val indexType = config.as[String]("elastic.docs.wtl_index")
+  val feedType = config.as[String]("elastic.docs.feeds")
   val clusterName = config.as[String]("elastic.clusterName")
   val hostname = config.as[String]("hostname")
   val batchSize = config.as[Int]("elastic.feeds.batch_size")
@@ -65,9 +66,9 @@ class ProcessFeeds(configFile: String)(implicit
 
     val source = Source.tick(10.seconds, interval, 1)
       .log(logName, x => s"Starting extraction at ${DateTime.now()}")
-      .flatMapConcat(_ => feedSource(client, feedsDocPath))
+      .flatMapConcat(_ => feedSource(client, s"$indexType/$feedType"))
 
-    val feedsSink = feedSink(client, feedsDocPath, batchSize, parallel)
+    val feedsSink = feedSink(client, indexType, feedType, batchSize, parallel)
     val articleSink = KafkaHelper.articleSink(kafkaBrokers, writeTopic)
 
     val graph = GraphDSL.create() { implicit b =>
