@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val jobs = List("ProcessFeeds", "GoogleNews", "TagArticles",
     "ToElastic", "InitIndex", "FeedsFromItems", "LoadArticles")
-  val envs = List("mac", "linux", "docker")
+  val envs = List("mac", "linux", "docker", "prod_single")
 
   val jobName = opt[String](descr = s"name of the job to run in $jobs", required = true)
   validate(jobName) { j =>
@@ -73,6 +73,7 @@ object Boot {
     case "docker" => "docker_prod.conf"
     case "linux" => "linux_dev.conf"
     case "mac" => "mac_dev.conf"
+    case "prod_single" => "docker_prod_single.conf"
   }
 
 }
