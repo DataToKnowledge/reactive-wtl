@@ -5,11 +5,11 @@ services:
     ports:
       - 9100:9100
     links:
-      - elasticsearch1
-      - elasticsearch2
+      - elastic1
+      - elastic2
     networks:
       - esnet
-  elasticsearch1:
+  elastic1:
     image: docker.elastic.co/elasticsearch/elasticsearch:5.2.2
     container_name: elasticsearch1
     environment:
@@ -41,7 +41,7 @@ services:
     networks:
       - esnet
 
-  elasticsearch2:
+  elastic2:
     image: docker.elastic.co/elasticsearch/elasticsearch:5.2.2
     environment:
       - cluster.name=wheretolive
@@ -54,7 +54,7 @@ services:
       - node.name=wtl_2
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
 #      - "ES_JAVA_OPTS=-Xms2G -Xmx2G"
-      - "discovery.zen.ping.unicast.hosts=elasticsearch1"
+      - "discovery.zen.ping.unicast.hosts=elastic1"
     ulimits:
       memlock:
         soft: -1

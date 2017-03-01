@@ -2,7 +2,7 @@ package it.dtk.reactive.jobs
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.kafka.scaladsl.Consumer.{Control, Message}
+import akka.kafka.scaladsl.Consumer.{ Control, Message }
 import akka.kafka.scaladsl.Producer
 import akka.kafka.scaladsl.Producer.Result
 import akka.stream.scaladsl._
@@ -21,7 +21,7 @@ import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.bulk.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
-import com.sksamuel.elastic4s.streams.{RequestBuilder, ScrollPublisher}
+import com.sksamuel.elastic4s.streams.{ RequestBuilder, ScrollPublisher }
 
 import scala.language.implicitConversions
 
@@ -57,7 +57,7 @@ object ElasticHelper {
 
     implicit val builder = new RequestBuilder[Feed] {
       def request(f: Feed): BulkCompatibleDefinition = {
-        indexInto(indexType,docType) id f.publisher source write(f)
+        indexInto(indexType, docType) id f.publisher source write(f)
       }
     }
     Sink.fromSubscriber(client.subscriber[Feed](batchSize, concurrentRequests))

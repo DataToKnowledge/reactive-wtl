@@ -33,7 +33,6 @@ class ProcessTerms(configFile: String)(implicit val system: ActorSystem, implici
   val termDocType = config.as[String]("elastic.docs.query_terms")
   val feedDocType = config.as[String]("elastic.docs.feeds")
 
-
   val client = new ElasticQueryTerms(esHosts, indexType, termDocType, clusterName)
 
   //scheduler params

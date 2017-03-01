@@ -4,10 +4,10 @@ import java.net.URL
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.sksamuel.elastic4s.{ElasticClient, TcpClient}
+import com.sksamuel.elastic4s.{ ElasticClient, TcpClient }
 import com.typesafe.config.ConfigFactory
 import it.dtk.es._
-import it.dtk.model.{FlattenedNews, SemanticTag}
+import it.dtk.model.{ FlattenedNews, SemanticTag }
 import it.dtk.protobuf._
 import net.ceedubs.ficus.Ficus._
 import org.joda.time.DateTime

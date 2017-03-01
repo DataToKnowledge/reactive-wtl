@@ -4,12 +4,12 @@ import java.net.URL
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import better.files.File
 import com.typesafe.config.ConfigFactory
 import it.dtk.es.ESUtil
-import it.dtk.model.{FlattenedNews, SemanticTag}
-import it.dtk.protobuf.{Annotation, Article}
+import it.dtk.model.{ FlattenedNews, SemanticTag }
+import it.dtk.protobuf.{ Annotation, Article }
 import org.joda.time.DateTime
 import net.ceedubs.ficus.Ficus._
 
@@ -36,7 +36,6 @@ class LoadArticles(configFile: String)(implicit val system: ActorSystem, implici
       val file = File(config.getString("load_articles_path"))
       val in = file.newInputStream
       var article = Article.parseDelimitedFrom(in)
-
 
       override def hasNext: Boolean = article.nonEmpty
 
@@ -89,7 +88,7 @@ class LoadArticles(configFile: String)(implicit val system: ActorSystem, implici
       persons = filterPerson(annotations),
       semanticNames = annotations.map(_.name).distinct,
       semanticTags = Seq(),
-//        annotations.flatMap(_.tags.map(_.replace("_", " "))).distinct,
+      //        annotations.flatMap(_.tags.map(_.replace("_", " "))).distinct,
       pin = a.focusLocation.map(_.pin)
     )
   }
