@@ -12,7 +12,6 @@ services:
     command: "-e prod_single -j LoadArticles"
 
 networks:
-networks:
   default:
     external:
       name: kddeenv_esnet

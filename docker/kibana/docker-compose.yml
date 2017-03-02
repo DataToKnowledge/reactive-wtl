@@ -1,0 +1,18 @@
+version: '3'
+services:
+  kibana:
+    image: docker.elastic.co/kibana/kibana:5.2.2
+    environment:
+      SERVER_NAME: wheretolive-italy
+      ELASTICSEARCH_URL: http://193.204.187.132:39201
+    ports:
+      - 5601:5601
+#    external_links:
+#      - elastic1
+#      - elastic2
+#
+#networks:
+#  default:
+#    external:
+#      name: kddeenv_esnet
+
